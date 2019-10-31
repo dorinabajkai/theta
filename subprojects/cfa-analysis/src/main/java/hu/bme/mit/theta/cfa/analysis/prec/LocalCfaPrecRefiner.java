@@ -67,7 +67,7 @@ public final class LocalCfaPrecRefiner<S extends ExprState, A extends Action, P 
 		for (int i = 0; i < trace.getStates().size(); ++i) {
 			final Loc loc = trace.getState(i).getLoc();
 			final P precForLoc = runningPrecs.get(loc);
-			final P newPrecForLoc = refToPrec.toPrec(refutation, i);
+			final P newPrecForLoc = refToPrec.toPrec(refutation, i, precForLoc);
 			runningPrecs.put(loc, refToPrec.join(precForLoc, newPrecForLoc));
 		}
 

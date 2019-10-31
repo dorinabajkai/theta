@@ -15,26 +15,29 @@
  */
 package hu.bme.mit.theta.analysis.algorithm.cegar;
 
+import hu.bme.mit.theta.analysis.Prec;
 import hu.bme.mit.theta.common.Utils;
 
 /**
  * Represents the result of the Abstractor component, that can be either safe or
  * unsafe.
  */
-public final class AbstractorResult {
+public final class AbstractorResult<P extends Prec> {
 
 	private final boolean safe;
+	P prec;
 
-	public AbstractorResult(final boolean safe) {
+	public AbstractorResult(final boolean safe, P prec) {
 		this.safe = safe;
+		this.prec = prec;
 	}
 
-	public static AbstractorResult safe() {
-		return new AbstractorResult(true);
+	public static <P extends Prec> AbstractorResult safe(P prec) {
+		return new AbstractorResult(true, prec);
 	}
 
-	public static AbstractorResult unsafe() {
-		return new AbstractorResult(false);
+	public static <P extends Prec> AbstractorResult unsafe(P prec) {
+		return new AbstractorResult(false, prec);
 	}
 
 	public boolean isSafe() {
@@ -43,6 +46,14 @@ public final class AbstractorResult {
 
 	public boolean isUnsafe() {
 		return !isSafe();
+	}
+
+	public Prec getPrec() {
+		return prec;
+	}
+
+	public void setPrec(P prec) {
+		this.prec = prec;
 	}
 
 	@Override

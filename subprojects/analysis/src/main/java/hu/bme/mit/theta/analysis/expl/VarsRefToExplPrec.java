@@ -26,7 +26,7 @@ import hu.bme.mit.theta.core.decl.VarDecl;
 public class VarsRefToExplPrec implements RefutationToPrec<ExplPrec, VarsRefutation> {
 
 	@Override
-	public ExplPrec toPrec(final VarsRefutation refutation, final int index) {
+	public ExplPrec toPrec(final VarsRefutation refutation, final int index, ExplPrec precision) {
 		final Collection<VarDecl<?>> vars = refutation.getVarSets().getVars(index);
 		final ExplPrec prec = ExplPrec.of(vars);
 		return prec;

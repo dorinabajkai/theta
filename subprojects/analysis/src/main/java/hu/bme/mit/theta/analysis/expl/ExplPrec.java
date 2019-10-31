@@ -17,10 +17,7 @@ package hu.bme.mit.theta.analysis.expl;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 import com.google.common.collect.ImmutableSet;
 
@@ -39,6 +36,7 @@ public final class ExplPrec implements Prec {
 
 	private final Set<VarDecl<?>> vars;
 	private static ExplPrec EMPTY = new ExplPrec(Collections.emptySet());
+
 
 	private ExplPrec(final Iterable<? extends VarDecl<?>> vars) {
 		this.vars = ImmutableSet.copyOf(vars);

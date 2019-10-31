@@ -49,7 +49,7 @@ public final class JoiningPrecRefiner<S extends State, A extends Action, P exten
 
 		P runningPrec = prec;
 		for (int i = 0; i < trace.getStates().size(); ++i) {
-			final P precFromRef = refToPrec.toPrec(refutation, i);
+			final P precFromRef = refToPrec.toPrec(refutation, i, prec);
 			runningPrec = refToPrec.join(runningPrec, precFromRef);
 		}
 		return runningPrec;

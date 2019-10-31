@@ -46,20 +46,22 @@ public final class BasicAbstractor<S extends State, A extends Action, P extends 
 	private final Function<? super S, ?> projection;
 	private final Waitlist<ArgNode<S, A>> waitlist;
 	private final StopCriterion<S, A> stopCriterion;
+	private final PrecAdjuster<S, A, P> precAdjuster;
 	private final Logger logger;
 
 	private BasicAbstractor(final ArgBuilder<S, A, P> argBuilder, final Function<? super S, ?> projection,
-							final Waitlist<ArgNode<S, A>> waitlist, final StopCriterion<S, A> stopCriterion, final Logger logger) {
+							final Waitlist<ArgNode<S, A>> waitlist, final StopCriterion<S, A> stopCriterion, final PrecAdjuster<S, A, P> precAdjuster, final Logger logger) {
 		this.argBuilder = checkNotNull(argBuilder);
 		this.projection = checkNotNull(projection);
 		this.waitlist = checkNotNull(waitlist);
 		this.stopCriterion = checkNotNull(stopCriterion);
+		this.precAdjuster = checkNotNull(precAdjuster);
 		this.logger = checkNotNull(logger);
 	}
 
 	public static <S extends State, A extends Action, P extends Prec> Builder<S, A, P> builder(
-			final ArgBuilder<S, A, P> argBuilder) {
-		return new Builder<>(argBuilder);
+			final ArgBuilder<S, A, P> argBuilder, final PrecAdjuster<S, A, P> precAdjuster) {
+		return new Builder<>(argBuilder, precAdjuster);
 	}
 
 	@Override
@@ -68,7 +70,7 @@ public final class BasicAbstractor<S extends State, A extends Action, P extends 
 	}
 
 	@Override
-	public AbstractorResult check(final ARG<S, A> arg, final P prec) {
+	public AbstractorResult check(final ARG<S, A> arg, P prec) {
 		checkNotNull(arg);
 		checkNotNull(prec);
 		logger.write(Level.DETAIL, "|  |  Precision: %s%n", prec);
@@ -96,6 +98,7 @@ public final class BasicAbstractor<S extends State, A extends Action, P extends 
 
 			close(node, reachedSet.get(node));
 			if (!node.isSubsumed() && !node.isTarget()) {
+				prec = precAdjuster.adjust(prec, node);
 				final Collection<ArgNode<S, A>> newNodes = argBuilder.expand(node, prec);
 				reachedSet.addAll(newNodes);
 				waitlist.addAll(newNodes);
@@ -110,9 +113,9 @@ public final class BasicAbstractor<S extends State, A extends Action, P extends 
 
 		if (arg.isSafe()) {
 			checkState(arg.isComplete(), "Returning incomplete ARG as safe");
-			return AbstractorResult.safe();
+			return AbstractorResult.safe(prec);
 		} else {
-			return AbstractorResult.unsafe();
+			return AbstractorResult.unsafe(prec);
 		}
 	}
 
@@ -138,13 +141,15 @@ public final class BasicAbstractor<S extends State, A extends Action, P extends 
 		private Function<? super S, ?> projection;
 		private Waitlist<ArgNode<S, A>> waitlist;
 		private StopCriterion<S, A> stopCriterion;
+		private PrecAdjuster<S, A, P> precAdjuster;
 		private Logger logger;
 
-		private Builder(final ArgBuilder<S, A, P> argBuilder) {
+		private Builder(final ArgBuilder<S, A, P> argBuilder, final PrecAdjuster<S, A, P> precAdjuster) {
 			this.argBuilder = argBuilder;
 			this.projection = s -> 0;
 			this.waitlist = FifoWaitlist.create();
 			this.stopCriterion = StopCriterions.firstCex();
+			this.precAdjuster = precAdjuster;
 			this.logger = NullLogger.getInstance();
 		}
 
@@ -169,7 +174,7 @@ public final class BasicAbstractor<S extends State, A extends Action, P extends 
 		}
 
 		public BasicAbstractor<S, A, P> build() {
-			return new BasicAbstractor<>(argBuilder, projection, waitlist, stopCriterion, logger);
+			return new BasicAbstractor<>(argBuilder, projection, waitlist, stopCriterion, precAdjuster, logger);
 		}
 	}
 

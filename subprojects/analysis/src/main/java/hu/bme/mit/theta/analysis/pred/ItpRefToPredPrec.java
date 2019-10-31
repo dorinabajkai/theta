@@ -38,7 +38,7 @@ public class ItpRefToPredPrec implements RefutationToPrec<PredPrec, ItpRefutatio
 	}
 
 	@Override
-	public PredPrec toPrec(final ItpRefutation refutation, final int index) {
+	public PredPrec toPrec(final ItpRefutation refutation, final int index, PredPrec precision) {
 		final Expr<BoolType> expr = refutation.get(index);
 		final Collection<Expr<BoolType>> exprs = exprSplitter.apply(expr);
 		final PredPrec prec = PredPrec.of(exprs);

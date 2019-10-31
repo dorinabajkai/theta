@@ -29,7 +29,7 @@ import hu.bme.mit.theta.core.utils.ExprUtils;
 public class ItpRefToExplPrec implements RefutationToPrec<ExplPrec, ItpRefutation> {
 
 	@Override
-	public ExplPrec toPrec(final ItpRefutation refutation, final int index) {
+	public ExplPrec toPrec(final ItpRefutation refutation, final int index, ExplPrec precision) {
 		final Expr<BoolType> expr = refutation.get(index);
 		final Collection<VarDecl<?>> vars = ExprUtils.getVars(expr);
 		final ExplPrec prec = ExplPrec.of(vars);

@@ -53,7 +53,7 @@ public final class GlobalCfaPrecRefiner<S extends ExprState, A extends Action, P
 		final GlobalCfaPrec<P> constPrec = (GlobalCfaPrec<P>) prec;
 		P runningPrec = constPrec.getPrec();
 		for (int i = 0; i < trace.getStates().size(); ++i) {
-			final P precFromRef = refToPrec.toPrec(refutation, i);
+			final P precFromRef = refToPrec.toPrec(refutation, i, runningPrec);
 			runningPrec = refToPrec.join(runningPrec, precFromRef);
 		}
 		return constPrec.refine(runningPrec);
