@@ -39,12 +39,14 @@ import hu.bme.mit.theta.cfa.analysis.CfaTraceConcretizer;
 import hu.bme.mit.theta.cfa.analysis.config.CfaConfig;
 import hu.bme.mit.theta.cfa.analysis.config.CfaConfigBuilder;
 import hu.bme.mit.theta.cfa.analysis.config.CfaConfigBuilder.Domain;
+import hu.bme.mit.theta.cfa.analysis.config.CfaConfigBuilder.PredDomain;
 import hu.bme.mit.theta.cfa.analysis.config.CfaConfigBuilder.Encoding;
 import hu.bme.mit.theta.cfa.analysis.config.CfaConfigBuilder.InitPrec;
 import hu.bme.mit.theta.cfa.analysis.config.CfaConfigBuilder.PrecGranularity;
 import hu.bme.mit.theta.cfa.analysis.config.CfaConfigBuilder.PredSplit;
 import hu.bme.mit.theta.cfa.analysis.config.CfaConfigBuilder.Refinement;
 import hu.bme.mit.theta.cfa.analysis.config.CfaConfigBuilder.Search;
+import hu.bme.mit.theta.cfa.analysis.config.CfaConfigBuilder.PrecAdjust;
 import hu.bme.mit.theta.cfa.dsl.CfaDslManager;
 import hu.bme.mit.theta.common.logging.ConsoleLogger;
 import hu.bme.mit.theta.common.logging.Logger;
@@ -67,13 +69,19 @@ public class CfaCli {
 	@Parameter(names = "--domain", description = "Abstract domain")
 	Domain domain = Domain.PRED_CART;
 
+	@Parameter(names = "--preddomain", description = "Predicate domain (for prod2)")
+	PredDomain predDomain = PredDomain.CART;
+
 	@Parameter(names = "--refinement", description = "Refinement strategy")
 	Refinement refinement = Refinement.SEQ_ITP;
+
+	@Parameter(names = "--precadjust", description = "Precision adjusment strategy")
+	PrecAdjust precAdjust = PrecAdjust.NO_OP;
 
 	@Parameter(names = "--search", description = "Search strategy")
 	Search search = Search.BFS;
 
-	@Parameter(names = "--predsplit", description = "Predicate splitting (for predicate abstraction)")
+	@Parameter(names = "--predsplit", description = "Predicate splitting (for predicate and prod2 abstraction)")
 	PredSplit predSplit = PredSplit.WHOLE;
 
 	@Parameter(names = "--model", description = "Path of the input CFA model", required = true)
@@ -166,8 +174,8 @@ public class CfaCli {
 	}
 
 	private CfaConfig<?, ?, ?> buildConfiguration(final CFA cfa) {
-		return new CfaConfigBuilder(domain, refinement, solverFactory).precGranularity(precGranularity).search(search)
-				.predSplit(predSplit).encoding(encoding).maxEnum(maxEnum).initPrec(initPrec).logger(logger).build(cfa);
+		return new CfaConfigBuilder(domain, refinement, precAdjust, solverFactory).precGranularity(precGranularity).search(search)
+				.predSplit(predSplit).predDomain(predDomain).encoding(encoding).maxEnum(maxEnum).initPrec(initPrec).logger(logger).build(cfa);
 	}
 
 	private void printResult(final SafetyResult<?, ?> status, final CFA cfa, final long totalTimeMs) {

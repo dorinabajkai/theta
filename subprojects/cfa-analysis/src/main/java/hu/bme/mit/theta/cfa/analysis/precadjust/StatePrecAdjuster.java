@@ -1,4 +1,4 @@
-package hu.bme.mit.theta.analysis.prod2.PredXExpl;
+package hu.bme.mit.theta.cfa.analysis.precadjust;
 
 import hu.bme.mit.theta.analysis.LTS;
 import hu.bme.mit.theta.analysis.algorithm.ArgNode;
@@ -10,6 +10,11 @@ import hu.bme.mit.theta.analysis.pred.PredPrec;
 import hu.bme.mit.theta.analysis.pred.PredState;
 import hu.bme.mit.theta.analysis.prod2.Prod2Prec;
 import hu.bme.mit.theta.analysis.prod2.Prod2State;
+import hu.bme.mit.theta.cfa.CFA;
+import hu.bme.mit.theta.cfa.analysis.CfaAction;
+import hu.bme.mit.theta.cfa.analysis.CfaPrec;
+import hu.bme.mit.theta.cfa.analysis.CfaState;
+import hu.bme.mit.theta.cfa.analysis.lts.CfaLts;
 import hu.bme.mit.theta.core.decl.VarDecl;
 import hu.bme.mit.theta.core.model.Valuation;
 import hu.bme.mit.theta.core.type.NullaryExpr;
@@ -23,32 +28,33 @@ import java.util.*;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static hu.bme.mit.theta.core.type.booltype.BoolExprs.Not;
 
-public class StatePrecAdjuster implements PrecAdjuster<Prod2State<PredState, ExplState>, ExprAction, Prod2Prec<PredPrec, ExplPrec>> {
+public class StatePrecAdjuster implements PrecAdjuster<CfaState<Prod2State<PredState, ExplState>>, CfaAction, CfaPrec<Prod2Prec<PredPrec, ExplPrec>>> {
 	private int limit;
-	private final LTS<? super ExplState, ? extends ExprAction> lts;
+	private final CfaLts lts;
 	private Solver solver;
 
-	private StatePrecAdjuster(int limit, final LTS<? super ExplState, ? extends ExprAction> lts, Solver solver) {
+	private StatePrecAdjuster(int limit, final CfaLts lts, Solver solver) {
 		this.limit = limit;
 		this.lts = lts;
 		this.solver = solver;
 	}
 
-	public static StatePrecAdjuster create(final Solver solver, final int limit, final LTS<? super ExplState, ? extends ExprAction> lts){
+	public static StatePrecAdjuster create(final Solver solver, final int limit, final CfaLts lts){
 		return new StatePrecAdjuster(limit, lts, solver);
 	}
 
 	@Override
-	public Prod2Prec<PredPrec, ExplPrec> adjust(Prod2Prec<PredPrec, ExplPrec> prec, ArgNode<Prod2State<PredState, ExplState>, ExprAction> node) {
+	public CfaPrec<Prod2Prec<PredPrec, ExplPrec>> adjust(CfaPrec<Prod2Prec<PredPrec, ExplPrec>> prec, ArgNode<CfaState<Prod2State<PredState, ExplState>>, CfaAction> node) {
 		checkNotNull(node);
 		checkNotNull(prec);
 		boolean removed = true;
-		Set<VarDecl<?>> dropouts = prec.getDropouts();
+		CFA.Loc loc = node.getState().getLoc();
+		Set<VarDecl<?>> dropouts = prec.getPrec(loc).getDropouts();
 
-		final ExplState state = node.getState().getState2();
-		final Collection<? extends ExprAction> actions = lts.getEnabledActionsFor(state);
+		final ExplState state = node.getState().getState().getState2();
+		final Collection<? extends ExprAction> actions = lts.getEnabledActionsFor(node.getState());
 
-		ExplPrec newPrec = prec.getPrec2();
+		ExplPrec newPrec = prec.getPrec(loc).getPrec2();
 
 		for (final ExprAction action : actions) {
 
@@ -101,7 +107,7 @@ public class StatePrecAdjuster implements PrecAdjuster<Prod2State<PredState, Exp
 			}
 		}
 
-		return Prod2Prec.of(prec.getPrec1(), newPrec, dropouts);
+		return prec.refine(loc, Prod2Prec.of(prec.getPrec(loc).getPrec1(), newPrec, dropouts));
 	}
 
 }

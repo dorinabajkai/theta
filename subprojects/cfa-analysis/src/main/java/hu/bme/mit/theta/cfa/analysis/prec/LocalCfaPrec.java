@@ -77,6 +77,7 @@ public final class LocalCfaPrec<P extends Prec> implements CfaPrec<P> {
 		}
 	}
 
+
 	public LocalCfaPrec<P> refine(final Map<Loc, P> refinedPrecs) {
 		checkNotNull(refinedPrecs);
 
@@ -97,6 +98,7 @@ public final class LocalCfaPrec<P extends Prec> implements CfaPrec<P> {
 		return new LocalCfaPrec<>(refinedMapping, this.defaultPrec);
 	}
 
+	@Override
 	public LocalCfaPrec<P> refine(final Loc loc, final P refinedPrec) {
 		return refine(Collections.singletonMap(loc, refinedPrec));
 	}

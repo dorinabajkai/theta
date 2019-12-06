@@ -15,8 +15,6 @@
  */
 package hu.bme.mit.theta.cfa.analysis.config;
 
-import static hu.bme.mit.theta.core.type.booltype.BoolExprs.True;
-
 import hu.bme.mit.theta.analysis.Action;
 import hu.bme.mit.theta.analysis.Analysis;
 import hu.bme.mit.theta.analysis.Prec;
@@ -24,27 +22,23 @@ import hu.bme.mit.theta.analysis.State;
 import hu.bme.mit.theta.analysis.algorithm.ArgBuilder;
 import hu.bme.mit.theta.analysis.algorithm.ArgNodeComparators;
 import hu.bme.mit.theta.analysis.algorithm.ArgNodeComparators.ArgNodeComparator;
+
 import hu.bme.mit.theta.analysis.algorithm.SafetyChecker;
 import hu.bme.mit.theta.analysis.algorithm.cegar.Abstractor;
 import hu.bme.mit.theta.analysis.algorithm.cegar.BasicAbstractor;
 import hu.bme.mit.theta.analysis.algorithm.cegar.CegarChecker;
 import hu.bme.mit.theta.analysis.algorithm.cegar.Refiner;
 import hu.bme.mit.theta.analysis.algorithm.cegar.abstractor.StopCriterions;
-import hu.bme.mit.theta.analysis.expl.ExplPrec;
-import hu.bme.mit.theta.analysis.expl.ExplState;
-import hu.bme.mit.theta.analysis.expl.ExplStmtAnalysis;
-import hu.bme.mit.theta.analysis.expl.ItpRefToExplPrec;
-import hu.bme.mit.theta.analysis.expl.VarsRefToExplPrec;
+import hu.bme.mit.theta.analysis.expl.*;
 import hu.bme.mit.theta.analysis.expr.ExprState;
 import hu.bme.mit.theta.analysis.expr.refinement.*;
-import hu.bme.mit.theta.analysis.pred.ExprSplitters;
+import hu.bme.mit.theta.analysis.pred.*;
 import hu.bme.mit.theta.analysis.pred.ExprSplitters.ExprSplitter;
-import hu.bme.mit.theta.analysis.pred.ItpRefToPredPrec;
-import hu.bme.mit.theta.analysis.pred.PredAbstractors;
 import hu.bme.mit.theta.analysis.pred.PredAbstractors.PredAbstractor;
-import hu.bme.mit.theta.analysis.pred.PredAnalysis;
-import hu.bme.mit.theta.analysis.pred.PredPrec;
-import hu.bme.mit.theta.analysis.pred.PredState;
+import hu.bme.mit.theta.analysis.prod2.PredXExpl.Prod2RefToPrec;
+import hu.bme.mit.theta.analysis.prod2.Prod2Analysis;
+import hu.bme.mit.theta.analysis.prod2.Prod2Prec;
+import hu.bme.mit.theta.analysis.prod2.Prod2State;
 import hu.bme.mit.theta.analysis.waitlist.PriorityWaitlist;
 import hu.bme.mit.theta.cfa.CFA;
 import hu.bme.mit.theta.cfa.analysis.*;
@@ -59,20 +53,35 @@ import hu.bme.mit.theta.cfa.analysis.prec.GlobalCfaPrec;
 import hu.bme.mit.theta.cfa.analysis.prec.GlobalCfaPrecRefiner;
 import hu.bme.mit.theta.cfa.analysis.prec.LocalCfaPrec;
 import hu.bme.mit.theta.cfa.analysis.prec.LocalCfaPrecRefiner;
+import hu.bme.mit.theta.cfa.analysis.precadjust.*;
 import hu.bme.mit.theta.common.logging.Logger;
 import hu.bme.mit.theta.common.logging.NullLogger;
 import hu.bme.mit.theta.solver.ItpSolver;
 import hu.bme.mit.theta.solver.SolverFactory;
 
+import static hu.bme.mit.theta.core.type.booltype.BoolExprs.True;
+
 public class CfaConfigBuilder {
 	public enum Domain {
-		EXPL, PRED_BOOL, PRED_CART, PRED_SPLIT
+		EXPL, PRED_BOOL, PRED_CART, PRED_SPLIT, PROD_PRED_EXPL
+	}
+
+	;
+
+	public enum PredDomain {
+		BOOL, CART, SPLIT
 	}
 
 	;
 
 	public enum Refinement {
-		FW_BIN_ITP, BW_BIN_ITP, SEQ_ITP, MULTI_SEQ, UNSAT_CORE
+		FW_BIN_ITP, BW_BIN_ITP, SEQ_ITP, MULTI_SEQ, UNSAT_CORE, VAL_ITP;
+	}
+
+	;
+
+	public enum PrecAdjust {
+		NO_OP, STATE, PATH_T, PATH_NO_T, ARG_T, ARG_NO_T;
 	}
 
 	;
@@ -189,18 +198,28 @@ public class CfaConfigBuilder {
 	private Logger logger = NullLogger.getInstance();
 	private final SolverFactory solverFactory;
 	private final Domain domain;
+	private PredDomain predDomain = PredDomain.CART;
 	private final Refinement refinement;
+	private PrecAdjust precAdjust;
 	private Search search = Search.BFS;
 	private PredSplit predSplit = PredSplit.WHOLE;
 	private PrecGranularity precGranularity = PrecGranularity.GLOBAL;
 	private Encoding encoding = Encoding.LBE;
 	private int maxEnum = 0;
 	private InitPrec initPrec = InitPrec.EMPTY;
+	private int limit = 5;
 
-	public CfaConfigBuilder(final Domain domain, final Refinement refinement, final SolverFactory solverFactory) {
+	public CfaConfigBuilder(final Domain domain, final Refinement refinement, final PrecAdjust precAdjust, final SolverFactory solverFactory) {
 		this.domain = domain;
 		this.refinement = refinement;
+		this.precAdjust = precAdjust;
 		this.solverFactory = solverFactory;
+	}
+
+
+	public CfaConfigBuilder predDomain(final PredDomain predDomain){
+		this.predDomain = predDomain;
+		return this;
 	}
 
 	public CfaConfigBuilder logger(final Logger logger) {
@@ -243,12 +262,21 @@ public class CfaConfigBuilder {
 		final CfaLts lts = encoding.getLts();
 
 		if (domain == Domain.EXPL) {
+
+			switch (precAdjust) {
+				case NO_OP:
+					break;
+				default:
+					throw new UnsupportedOperationException(
+							domain + " domain does not support " + precAdjust + " precision adjustment strategy.");
+			}
+
 			final Analysis<CfaState<ExplState>, CfaAction, CfaPrec<ExplPrec>> analysis = CfaAnalysis
 					.create(cfa.getInitLoc(), ExplStmtAnalysis.create(solver, True(), maxEnum));
 			final ArgBuilder<CfaState<ExplState>, CfaAction, CfaPrec<ExplPrec>> argBuilder = ArgBuilder.create(lts,
 					analysis, s -> s.getLoc().equals(cfa.getErrorLoc()), true);
 			final Abstractor<CfaState<ExplState>, CfaAction, CfaPrec<ExplPrec>> abstractor = BasicAbstractor
-					.builder(argBuilder).projection(CfaState::getLoc)
+					.builder(argBuilder, NoOpPrecAdjuster.create()).projection(CfaState::getLoc)
 					.waitlist(PriorityWaitlist.create(search.getComp(cfa)))
 					.stopCriterion(refinement == Refinement.MULTI_SEQ ? StopCriterions.fullExploration()
 							: StopCriterions.firstCex()).logger(logger).build();
@@ -274,6 +302,10 @@ public class CfaConfigBuilder {
 					break;
 				case UNSAT_CORE:
 					refiner = SingleExprTraceRefiner.create(ExprTraceUnsatCoreChecker.create(True(), True(), solver),
+							precGranularity.createRefiner(new VarsRefToExplPrec()), logger);
+					break;
+				case VAL_ITP:
+					refiner = SingleExprTraceRefiner.create(ExprTraceValueItpChecker.create(solver, cfa.getVars()),
 							precGranularity.createRefiner(new VarsRefToExplPrec()), logger);
 					break;
 				default:
@@ -303,12 +335,21 @@ public class CfaConfigBuilder {
 				default:
 					throw new UnsupportedOperationException(domain + " domain is not supported.");
 			}
+
+			switch (precAdjust) {
+				case NO_OP:
+					break;
+				default:
+					throw new UnsupportedOperationException(
+							domain + " domain does not support " + precAdjust + " precision adjustment strategy.");
+			}
+
 			final Analysis<CfaState<PredState>, CfaAction, CfaPrec<PredPrec>> analysis = CfaAnalysis
 					.create(cfa.getInitLoc(), PredAnalysis.create(solver, predAbstractor, True()));
 			final ArgBuilder<CfaState<PredState>, CfaAction, CfaPrec<PredPrec>> argBuilder = ArgBuilder.create(lts,
 					analysis, s -> s.getLoc().equals(cfa.getErrorLoc()), true);
 			final Abstractor<CfaState<PredState>, CfaAction, CfaPrec<PredPrec>> abstractor = BasicAbstractor
-					.builder(argBuilder).projection(CfaState::getLoc)
+					.builder(argBuilder, NoOpPrecAdjuster.create()).projection(CfaState::getLoc)
 					.waitlist(PriorityWaitlist.create(search.getComp(cfa)))
 					.stopCriterion(refinement == Refinement.MULTI_SEQ ? StopCriterions.fullExploration()
 							: StopCriterions.firstCex()).logger(logger).build();
@@ -349,6 +390,96 @@ public class CfaConfigBuilder {
 
 			return CfaConfig.create(checker, prec);
 
+		} else if (domain == Domain.PROD_PRED_EXPL) {
+
+			PredAbstractor predAbstractor = null;
+			switch (predDomain) {
+				case BOOL:
+					predAbstractor = PredAbstractors.booleanAbstractor(solver);
+					break;
+				case CART:
+					predAbstractor = PredAbstractors.cartesianAbstractor(solver);
+					break;
+				case SPLIT:
+					predAbstractor = PredAbstractors.booleanSplitAbstractor(solver);
+					break;
+					default:
+						throw new UnsupportedOperationException(predDomain + " predicate domain is not supported by " + domain);
+			}
+
+			final Analysis<CfaState<Prod2State<PredState,ExplState>>, CfaAction, CfaPrec<Prod2Prec<PredPrec,ExplPrec>>> analysis = CfaAnalysis
+					.create(cfa.getInitLoc(), Prod2Analysis.create(PredAnalysis.create(solver, predAbstractor, True()) ,ExplStmtAnalysis.create(solver, True(), maxEnum)));
+			final ArgBuilder<CfaState<Prod2State<PredState,ExplState>>, CfaAction, CfaPrec<Prod2Prec<PredPrec,ExplPrec>>> argBuilder = ArgBuilder.create(lts,
+					analysis, s -> s.getLoc().equals(cfa.getErrorLoc()), true);
+
+			Abstractor<CfaState<Prod2State<PredState, ExplState>>, CfaAction, CfaPrec<Prod2Prec<PredPrec, ExplPrec>>> abstractor = null;
+
+			switch (precAdjust){
+				case STATE:
+					abstractor = BasicAbstractor
+							.builder(argBuilder, StatePrecAdjuster.create(solver, limit, lts)).projection(CfaState::getLoc)
+							.waitlist(PriorityWaitlist.create(search.getComp(cfa)))
+							.stopCriterion(refinement == Refinement.MULTI_SEQ ? StopCriterions.fullExploration()
+									: StopCriterions.firstCex()).logger(logger).build();
+					break;
+				case ARG_NO_T:
+					abstractor = BasicAbstractor
+							.builder(argBuilder, ArgPrecAdjuster.create(solver, limit, lts)).projection(CfaState::getLoc)
+							.waitlist(PriorityWaitlist.create(search.getComp(cfa)))
+							.stopCriterion(refinement == Refinement.MULTI_SEQ ? StopCriterions.fullExploration()
+									: StopCriterions.firstCex()).logger(logger).build();
+					break;
+				case ARG_T:
+					abstractor = BasicAbstractor
+							.builder(argBuilder, ArgPrecAdjusterWithT.create(limit)).projection(CfaState::getLoc)
+							.waitlist(PriorityWaitlist.create(search.getComp(cfa)))
+							.stopCriterion(refinement == Refinement.MULTI_SEQ ? StopCriterions.fullExploration()
+									: StopCriterions.firstCex()).logger(logger).build();
+					break;
+				case PATH_NO_T:
+					abstractor = BasicAbstractor
+							.builder(argBuilder, PathPrecAdjuster.create(solver, limit, lts)).projection(CfaState::getLoc)
+							.waitlist(PriorityWaitlist.create(search.getComp(cfa)))
+							.stopCriterion(refinement == Refinement.MULTI_SEQ ? StopCriterions.fullExploration()
+									: StopCriterions.firstCex()).logger(logger).build();
+					break;
+				case PATH_T:
+					abstractor = BasicAbstractor
+							.builder(argBuilder, PathPrecAdjusterWithT.create(limit)).projection(CfaState::getLoc)
+							.waitlist(PriorityWaitlist.create(search.getComp(cfa)))
+							.stopCriterion(refinement == Refinement.MULTI_SEQ ? StopCriterions.fullExploration()
+									: StopCriterions.firstCex()).logger(logger).build();
+					break;
+				default:
+					throw new UnsupportedOperationException(domain + " domain is not supported.");
+			}
+
+			Refiner<CfaState<Prod2State<PredState, ExplState>>, CfaAction, CfaPrec<Prod2Prec<PredPrec, ExplPrec>>> refiner = null;
+
+			switch (refinement) {
+				case FW_BIN_ITP:
+					refiner = SingleExprTraceRefiner.create(ExprTraceFwBinItpChecker.create(True(), True(), solver),
+							precGranularity.createRefiner(new Prod2RefToPrec(predSplit.splitter)), logger);
+					break;
+				case BW_BIN_ITP:
+					refiner = SingleExprTraceRefiner.create(ExprTraceBwBinItpChecker.create(True(), True(), solver),
+							precGranularity.createRefiner(new Prod2RefToPrec(predSplit.splitter)), logger);
+					break;
+				case SEQ_ITP:
+					refiner = SingleExprTraceRefiner.create(ExprTraceSeqItpChecker.create(True(), True(), solver),
+							precGranularity.createRefiner(new Prod2RefToPrec(predSplit.splitter)), logger);
+					break;
+				default:
+					throw new UnsupportedOperationException(
+							domain + " domain does not support " + refinement + " refinement.");
+			}
+
+			final SafetyChecker<CfaState<Prod2State<PredState,ExplState>>, CfaAction, CfaPrec<Prod2Prec<PredPrec, ExplPrec>>> checker = CegarChecker
+					.create(abstractor, refiner, logger);
+
+			final CfaPrec<Prod2Prec<PredPrec, ExplPrec>> prec = precGranularity.createPrec(Prod2Prec.of(PredPrec.of(), ExplPrec.empty()));
+
+			return CfaConfig.create(checker, prec);
 		} else {
 			throw new UnsupportedOperationException(domain + " domain is not supported.");
 		}

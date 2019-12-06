@@ -31,11 +31,15 @@ public class ArgPrecAdjuster implements PrecAdjuster<Prod2State<PredState, ExplS
 	private final LTS<? super ExplState, ? extends ExprAction> lts;
 	private Map<VarDecl, Collection<NullaryExpr<?>>> varValues;
 
-	public ArgPrecAdjuster(final Solver solver, final int limit, final LTS<? super ExplState, ? extends ExprAction> lts){
+	private ArgPrecAdjuster(final Solver solver, final int limit, final LTS<? super ExplState, ? extends ExprAction> lts){
 		this.solver = solver;
 		this.limit = limit;
 		this.lts = lts;
 		varValues = new HashMap<>();
+	}
+
+	public static ArgPrecAdjuster create(final Solver solver, final int limit, final LTS<? super ExplState, ? extends ExprAction> lts){
+		return new ArgPrecAdjuster(solver, limit, lts);
 	}
 
 

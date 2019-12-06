@@ -18,6 +18,11 @@ package hu.bme.mit.theta.cfa.analysis;
 import hu.bme.mit.theta.analysis.Prec;
 import hu.bme.mit.theta.cfa.CFA.Loc;
 
+import java.util.Map;
+
 public interface CfaPrec<P extends Prec> extends Prec {
 	P getPrec(final Loc loc);
+
+	CfaPrec<P> refine(final Loc loc, final P refinedPrec);
+
 }

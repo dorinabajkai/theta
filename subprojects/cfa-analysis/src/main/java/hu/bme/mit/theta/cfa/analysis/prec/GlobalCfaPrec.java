@@ -40,7 +40,8 @@ public final class GlobalCfaPrec<P extends Prec> implements CfaPrec<P> {
 		return new GlobalCfaPrec<>(prec);
 	}
 
-	public GlobalCfaPrec<P> refine(final P refinedPrec) {
+	@Override
+	public GlobalCfaPrec<P> refine(final Loc loc, final P refinedPrec) {
 		if (this.prec.equals(refinedPrec)) {
 			return this;
 		} else {

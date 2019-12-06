@@ -6,5 +6,6 @@ import hu.bme.mit.theta.analysis.State;
 import hu.bme.mit.theta.analysis.algorithm.ArgNode;
 
 public interface PrecAdjuster<S extends State, A extends Action, P extends Prec> {
+
 	P adjust(P prec, ArgNode<S ,A> node);
 }
