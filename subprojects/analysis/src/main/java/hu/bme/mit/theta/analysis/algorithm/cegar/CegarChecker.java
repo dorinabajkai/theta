@@ -67,7 +67,7 @@ public final class CegarChecker<S extends State, A extends Action, P extends Pre
 		long abstractorTime = 0;
 		long refinerTime = 0;
 		RefinerResult<S, A, P> refinerResult = null;
-		AbstractorResult abstractorResult = null;
+		AbstractorResult<P> abstractorResult = null;
 		final ARG<S, A> arg = abstractor.createArg();
 		P prec = initPrec;
 		int iteration = 0;
@@ -84,7 +84,7 @@ public final class CegarChecker<S extends State, A extends Action, P extends Pre
 			if (abstractorResult.isUnsafe()) {
 				logger.write(Level.MAINSTEP, "| Refining abstraction...%n");
 				final long refinerStartTime = stopwatch.elapsed(TimeUnit.MILLISECONDS);
-				refinerResult = refiner.refine(arg, prec);
+				refinerResult = refiner.refine(arg, (P) abstractorResult.getPrec());
 				refinerTime += stopwatch.elapsed(TimeUnit.MILLISECONDS) - refinerStartTime;
 				logger.write(Level.MAINSTEP, "Refining abstraction done, result: %s%n", refinerResult);
 

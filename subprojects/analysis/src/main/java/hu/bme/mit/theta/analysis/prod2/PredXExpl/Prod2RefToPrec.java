@@ -30,7 +30,6 @@ public class Prod2RefToPrec implements RefutationToPrec<Prod2Prec<PredPrec, Expl
 
 		final Set<VarDecl<?>> dropouts = prec.getDropouts();
 
-
 			final Expr<BoolType> expr = refutation.get(index);
 			final Collection<Expr<BoolType>> exprs = exprSplitter.apply(expr);
 			final Collection<Expr<BoolType>> preds = new ArrayList<>();
@@ -62,6 +61,8 @@ public class Prod2RefToPrec implements RefutationToPrec<Prod2Prec<PredPrec, Expl
 		PredPrec pPrec2 = prec2.getPrec1();
 		ExplPrec ePrec1 = prec1.getPrec2();
 		ExplPrec ePrec2 = prec2.getPrec2();
-		return Prod2Prec.of(pPrec1.join(pPrec2), ePrec1.join(ePrec2));
+		Set<VarDecl<?>> dropouts = prec1.getDropouts();
+		dropouts.addAll(prec2.getDropouts());
+		return Prod2Prec.of(pPrec1.join(pPrec2), ePrec1.join(ePrec2), dropouts);
 	}
 }
