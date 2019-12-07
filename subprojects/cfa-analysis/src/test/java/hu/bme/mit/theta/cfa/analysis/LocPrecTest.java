@@ -36,9 +36,9 @@ public class LocPrecTest {
 	@Test
 	public void testConstLocPrec() {
 		final GlobalCfaPrec<PrecStub> cp = GlobalCfaPrec.create(p1);
-		final GlobalCfaPrec<PrecStub> r1 = cp.refine(p1);
-		final GlobalCfaPrec<PrecStub> r2 = cp.refine(p2);
-		final GlobalCfaPrec<PrecStub> r3 = r2.refine(p2);
+		final GlobalCfaPrec<PrecStub> r1 = cp.refine(null, p1);
+		final GlobalCfaPrec<PrecStub> r2 = cp.refine(null, p2);
+		final GlobalCfaPrec<PrecStub> r3 = r2.refine(null, p2);
 
 		Assert.assertSame(cp, r1);
 		Assert.assertNotSame(r1, r2);

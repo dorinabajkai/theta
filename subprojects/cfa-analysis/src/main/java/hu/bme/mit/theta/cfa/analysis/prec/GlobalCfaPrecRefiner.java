@@ -56,7 +56,7 @@ public final class GlobalCfaPrecRefiner<S extends ExprState, A extends Action, P
 			final P precFromRef = refToPrec.toPrec(refutation, i, runningPrec);
 			runningPrec = refToPrec.join(runningPrec, precFromRef);
 		}
-		return constPrec.refine(runningPrec);
+		return constPrec.refine(null, runningPrec);
 	}
 
 	@Override

@@ -4,7 +4,6 @@ import hu.bme.mit.theta.analysis.algorithm.ArgNode;
 import hu.bme.mit.theta.analysis.algorithm.cegar.PrecAdjuster;
 import hu.bme.mit.theta.analysis.expl.ExplPrec;
 import hu.bme.mit.theta.analysis.expl.ExplState;
-import hu.bme.mit.theta.analysis.expr.ExprAction;
 import hu.bme.mit.theta.analysis.pred.PredPrec;
 import hu.bme.mit.theta.analysis.pred.PredState;
 import hu.bme.mit.theta.analysis.prod2.Prod2Prec;
@@ -40,15 +39,14 @@ public class ArgPrecAdjusterWithT implements PrecAdjuster<CfaState<Prod2State<Pr
 		for (VarDecl var : varValues.keySet()) {
 			Collection<NullaryExpr<?>> values = varValues.get(var);
 			if (values.size() > limit) {
-				if(!(dropouts.contains(var)))
-					dropouts.add(var);
+				dropouts.add(var);
 				vars.remove(var);
 			}
 		}
 		return prec.refine(node.getState().getLoc(), Prod2Prec.of(prec.getPrec(node.getState().getLoc()).getPrec1(), ExplPrec.of(vars), dropouts));
 	}
 
-	public Map<VarDecl, Collection<NullaryExpr<?>>> addVars (Map<VarDecl, Collection<NullaryExpr<?>>> counter, ArgNode<CfaState<Prod2State<PredState, ExplState>>, CfaAction> node){
+	private Map<VarDecl, Collection<NullaryExpr<?>>> addVars (Map<VarDecl, Collection<NullaryExpr<?>>> counter, ArgNode<CfaState<Prod2State<PredState, ExplState>>, CfaAction> node){
 		ExplState state = node.getState().getState().getState2();
 		for ( VarDecl var : (Collection<? extends VarDecl<?>>) state.getDecls()) {
 			if (counter.containsKey(var)) {

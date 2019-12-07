@@ -1,6 +1,5 @@
 package hu.bme.mit.theta.cfa.analysis.precadjust;
 
-import hu.bme.mit.theta.analysis.LTS;
 import hu.bme.mit.theta.analysis.algorithm.ArgNode;
 import hu.bme.mit.theta.analysis.algorithm.cegar.PrecAdjuster;
 import hu.bme.mit.theta.analysis.expl.ExplPrec;
@@ -116,7 +115,7 @@ public class PathPrecAdjuster implements PrecAdjuster<CfaState<Prod2State<PredSt
 		return prec.refine(loc, Prod2Prec.of(prec.getPrec(loc).getPrec1(), newPrec, dropouts));
 	}
 
-	public Map<VarDecl, Collection<NullaryExpr<?>>> addVars (Map<VarDecl, Collection<NullaryExpr<?>>> counter, ArgNode<CfaState<Prod2State<PredState, ExplState>>, CfaAction> node){
+	private Map<VarDecl, Collection<NullaryExpr<?>>> addVars (Map<VarDecl, Collection<NullaryExpr<?>>> counter, ArgNode<CfaState<Prod2State<PredState, ExplState>>, CfaAction> node){
 		ExplState state =  node.getState().getState().getState2();
 		for ( VarDecl var : (Collection<? extends VarDecl<?>>) state.getDecls()) {
 			if (counter.containsKey(var)) {

@@ -3,7 +3,6 @@ package hu.bme.mit.theta.analysis.algorithm.cegar;
 import hu.bme.mit.theta.analysis.Action;
 import hu.bme.mit.theta.analysis.Prec;
 import hu.bme.mit.theta.analysis.State;
-import hu.bme.mit.theta.analysis.algorithm.ArgBuilder;
 import hu.bme.mit.theta.analysis.algorithm.ArgNode;
 
 public class NoOpPrecAdjuster<S extends State, A extends Action, P extends Prec> implements PrecAdjuster<S, A, P> {

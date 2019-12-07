@@ -31,6 +31,7 @@ import static org.junit.Assert.assertTrue;
 import java.util.Collections;
 import java.util.function.Predicate;
 
+import hu.bme.mit.theta.analysis.algorithm.cegar.NoOpPrecAdjuster;
 import org.junit.Test;
 
 import hu.bme.mit.theta.analysis.Analysis;
@@ -106,7 +107,7 @@ public class StsExplTest {
 
 		final ArgBuilder<ExplState, StsAction, ExplPrec> argBuilder = ArgBuilder.create(lts, analysis, target);
 
-		final Abstractor<ExplState, StsAction, ExplPrec> abstractor = BasicAbstractor.builder(argBuilder)
+		final Abstractor<ExplState, StsAction, ExplPrec> abstractor = BasicAbstractor.builder(argBuilder, NoOpPrecAdjuster.create())
 				.waitlist(PriorityWaitlist.create(ArgNodeComparators.bfs())).logger(logger).build();
 
 		final ExprTraceChecker<VarsRefutation> exprTraceChecker = ExprTraceUnsatCoreChecker.create(sts.getInit(),

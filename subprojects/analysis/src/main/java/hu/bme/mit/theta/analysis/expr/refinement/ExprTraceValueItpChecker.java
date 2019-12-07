@@ -105,7 +105,7 @@ public class ExprTraceValueItpChecker implements ExprTraceChecker<VarsRefutation
 				for (int j = i + 1; j < castedTrace.getActions().size(); j++) {
 					Collection<ExplState> gammaPos = ExprStates.createStatesForExpr(solver,
 							BoolExprs.And(nextState.toExpr(), castedTrace.getAction(j).toExpr()), 0, newPrec::createState, castedTrace.getAction(j).nextIndexing(), 1);
-					if (gammaPos.stream().filter(State::isBottom).findAny().isPresent() || gammaPos.isEmpty()) {
+					if (gammaPos.stream().anyMatch(State::isBottom) || gammaPos.isEmpty()) {
 						dropouts.add(x);
 						break;
 					} else {

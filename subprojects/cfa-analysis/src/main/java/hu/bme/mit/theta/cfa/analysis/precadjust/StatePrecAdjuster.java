@@ -1,6 +1,5 @@
 package hu.bme.mit.theta.cfa.analysis.precadjust;
 
-import hu.bme.mit.theta.analysis.LTS;
 import hu.bme.mit.theta.analysis.algorithm.ArgNode;
 import hu.bme.mit.theta.analysis.algorithm.cegar.PrecAdjuster;
 import hu.bme.mit.theta.analysis.expl.ExplPrec;
@@ -84,8 +83,7 @@ public class StatePrecAdjuster implements PrecAdjuster<CfaState<Prod2State<PredS
 								counter.put(var, val);
 							}
 						}
-						Collection<VarDecl<?>> vars = new ArrayList<>();
-						vars.addAll(newPrec.getVars());
+						Collection<VarDecl<?>> vars = new ArrayList<>(newPrec.getVars());
 						for (VarDecl var : counter.keySet()) {
 							Collection<NullaryExpr<?>> values = counter.get(var);
 							if (values.size() > limit) {

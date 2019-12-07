@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.stream.Collectors;
 
+import hu.bme.mit.theta.analysis.algorithm.cegar.NoOpPrecAdjuster;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -93,7 +94,7 @@ public final class XtaZoneAnalysisTest {
 				.create(lts, analysis, s -> false);
 
 		final Abstractor<XtaState<Prod2State<ExplState, ZoneState>>, XtaAction, ZonePrec> abstractor = BasicAbstractor
-				.builder(argBuilder).projection(s -> s.getLocs()).build();
+				.builder(argBuilder, NoOpPrecAdjuster.create()).projection(s -> s.getLocs()).build();
 
 		final ARG<XtaState<Prod2State<ExplState, ZoneState>>, XtaAction> arg = abstractor.createArg();
 		abstractor.check(arg, prec);

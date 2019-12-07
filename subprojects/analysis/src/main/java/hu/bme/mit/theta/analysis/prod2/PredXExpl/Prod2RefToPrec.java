@@ -35,7 +35,7 @@ public class Prod2RefToPrec implements RefutationToPrec<Prod2Prec<PredPrec, Expl
 			final Collection<Expr<BoolType>> exprs = exprSplitter.apply(expr);
 			final Collection<Expr<BoolType>> preds = new ArrayList<>();
 			final Collection<VarDecl<?>> vars = new ArrayList<>();
-			Boolean isPred = false;
+			boolean isPred = false;
 
 			for (final Expr exp : exprs) {
 				for (final VarDecl var : ExprUtils.getVars(exp)) {
@@ -45,8 +45,9 @@ public class Prod2RefToPrec implements RefutationToPrec<Prod2Prec<PredPrec, Expl
 				}
 				if (isPred) {
 					preds.add(exp);
-				} else
+				} else {
 					vars.addAll(ExprUtils.getVars(exp));
+				}
 				isPred = false;
 			}
 
