@@ -451,7 +451,7 @@ public class CfaConfigBuilder {
 									: StopCriterions.firstCex()).logger(logger).build();
 					break;
 				default:
-					throw new UnsupportedOperationException(domain + " domain is not supported.");
+					throw new UnsupportedOperationException(domain + " domain does not support " + precAdjust + " precision adjustment.");
 			}
 
 			Refiner<CfaState<Prod2State<PredState, ExplState>>, CfaAction, CfaPrec<Prod2Prec<PredPrec, ExplPrec>>> refiner = null;
