@@ -216,6 +216,10 @@ public class CfaConfigBuilder {
 		this.solverFactory = solverFactory;
 	}
 
+	public CfaConfigBuilder limit(final int limit){
+		this.limit = limit;
+		return this;
+	}
 
 	public CfaConfigBuilder predDomain(final PredDomain predDomain){
 		this.predDomain = predDomain;

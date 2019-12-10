@@ -78,6 +78,9 @@ public class CfaCli {
 	@Parameter(names = "--precadjust", description = "Precision adjusment strategy")
 	PrecAdjust precAdjust = PrecAdjust.NO_OP;
 
+	@Parameter(names = "--limit", description = "Limit for product abstraction strategies")
+	int limit = 5;
+
 	@Parameter(names = "--search", description = "Search strategy")
 	Search search = Search.BFS;
 
@@ -174,7 +177,7 @@ public class CfaCli {
 	}
 
 	private CfaConfig<?, ?, ?> buildConfiguration(final CFA cfa) {
-		return new CfaConfigBuilder(domain, refinement, precAdjust, solverFactory).precGranularity(precGranularity).search(search)
+		return new CfaConfigBuilder(domain, refinement, precAdjust, solverFactory).limit(limit).precGranularity(precGranularity).search(search)
 				.predSplit(predSplit).predDomain(predDomain).encoding(encoding).maxEnum(maxEnum).initPrec(initPrec).logger(logger).build(cfa);
 	}
 
