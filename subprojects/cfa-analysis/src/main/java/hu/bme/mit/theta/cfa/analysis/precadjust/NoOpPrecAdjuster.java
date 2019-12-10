@@ -16,6 +16,6 @@ public class NoOpPrecAdjuster<S extends State, A extends Action, P extends Prec>
 
 	@Override
 	public P adjust(P prec, ArgNode<S, A> node) {
-		return null;
+		return prec;
 	}
 }
