@@ -48,7 +48,6 @@ public class PathPrecAdjuster implements PrecAdjuster<CfaState<Prod2State<PredSt
 		checkNotNull(node);
 		checkNotNull(prec);
 		CFA.Loc loc = node.getState().getLoc();
-		boolean removed = true;
 		Set<VarDecl<?>> dropouts = prec.getPrec(loc).getDropouts();
 		Map<VarDecl, Collection<NullaryExpr<?>>> varValues = new HashMap<>();
 
@@ -66,6 +65,7 @@ public class PathPrecAdjuster implements PrecAdjuster<CfaState<Prod2State<PredSt
 		ExplPrec newPrec = prec.getPrec(loc).getPrec2();
 
 		for (final ExprAction action : actions) {
+			boolean removed = true;
 			while (removed) {
 				removed = false;
 				try (WithPushPop wpp = new WithPushPop(solver)) {

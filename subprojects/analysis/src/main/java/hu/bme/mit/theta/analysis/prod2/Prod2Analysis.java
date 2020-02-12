@@ -30,7 +30,7 @@ public final class Prod2Analysis<S1 extends State, S2 extends State, A extends A
 
 	private final PartialOrd<Prod2State<S1, S2>> partialOrd;
 	private final InitFunc<Prod2State<S1, S2>, Prod2Prec<P1, P2>> initFunc;
-	private final TransFunc<Prod2State<S1, S2>, A, Prod2Prec<P1, P2>> transFunc;
+	private final TransFunc<Prod2State<S1, S2>, ? super A, Prod2Prec<P1, P2>> transFunc;
 
 	private Prod2Analysis(final Analysis<S1, ? super A, P1> analysis1, final Analysis<S2, ? super A, P2> analysis2,
 						  final StrengtheningOperator<S1, S2, P1, P2> strenghteningOperator) {
@@ -52,6 +52,27 @@ public final class Prod2Analysis<S1 extends State, S2 extends State, A extends A
 		return new Prod2Analysis<>(analysis1, analysis2, strenghteningOperator);
 	}
 
+	private Prod2Analysis(final Analysis<S1, ? super A, P1> analysis1, final Analysis<S2, ? super A, P2> analysis2,
+						  final StrengtheningOperator<S1, S2, P1, P2> strenghteningOperator, final TransFunc<Prod2State<S1, S2>, ? super A, Prod2Prec<P1, P2>> transFunc) {
+		checkNotNull(analysis1);
+		checkNotNull(analysis2);
+		partialOrd = Prod2Ord.create(analysis1.getPartialOrd(), analysis2.getPartialOrd());
+		initFunc = Prod2InitFunc.create(analysis1.getInitFunc(), analysis2.getInitFunc(), strenghteningOperator);
+		this.transFunc = transFunc;
+	}
+
+	public static <S1 extends State, S2 extends State, A extends Action, P1 extends Prec, P2 extends Prec> Prod2Analysis<S1, S2, A, P1, P2> create(
+			final Analysis<S1, ? super A, P1> analysis1, final Analysis<S2, ? super A, P2> analysis2, final TransFunc<Prod2State<S1, S2>, ? super A, Prod2Prec<P1, P2>> transFunc) {
+		return create(analysis1, analysis2, (states, prec) -> states, transFunc);
+	}
+
+	public static <S1 extends State, S2 extends State, A extends Action, P1 extends Prec, P2 extends Prec> Prod2Analysis<S1, S2, A, P1, P2> create(
+			final Analysis<S1, ? super A, P1> analysis1, final Analysis<S2, ? super A, P2> analysis2,
+			final StrengtheningOperator<S1, S2, P1, P2> strenghteningOperator, final TransFunc<Prod2State<S1, S2>, ? super A, Prod2Prec<P1, P2>> transFunc) {
+		return new Prod2Analysis<>(analysis1, analysis2, strenghteningOperator, transFunc);
+	}
+
+
 	@Override
 	public PartialOrd<Prod2State<S1, S2>> getPartialOrd() {
 		return partialOrd;
@@ -64,7 +85,7 @@ public final class Prod2Analysis<S1 extends State, S2 extends State, A extends A
 
 	@Override
 	public TransFunc<Prod2State<S1, S2>, A, Prod2Prec<P1, P2>> getTransFunc() {
-		return transFunc;
+		return (TransFunc<Prod2State<S1, S2>, A, Prod2Prec<P1, P2>>) transFunc;
 	}
 
 }

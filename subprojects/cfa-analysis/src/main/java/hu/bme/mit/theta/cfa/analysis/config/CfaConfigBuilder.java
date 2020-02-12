@@ -15,10 +15,7 @@
  */
 package hu.bme.mit.theta.cfa.analysis.config;
 
-import hu.bme.mit.theta.analysis.Action;
-import hu.bme.mit.theta.analysis.Analysis;
-import hu.bme.mit.theta.analysis.Prec;
-import hu.bme.mit.theta.analysis.State;
+import hu.bme.mit.theta.analysis.*;
 import hu.bme.mit.theta.analysis.algorithm.ArgBuilder;
 import hu.bme.mit.theta.analysis.algorithm.ArgNodeComparators;
 import hu.bme.mit.theta.analysis.algorithm.ArgNodeComparators.ArgNodeComparator;
@@ -30,11 +27,14 @@ import hu.bme.mit.theta.analysis.algorithm.cegar.CegarChecker;
 import hu.bme.mit.theta.analysis.algorithm.cegar.Refiner;
 import hu.bme.mit.theta.analysis.algorithm.cegar.abstractor.StopCriterions;
 import hu.bme.mit.theta.analysis.expl.*;
+import hu.bme.mit.theta.analysis.expr.ExprAction;
 import hu.bme.mit.theta.analysis.expr.ExprState;
+import hu.bme.mit.theta.analysis.expr.StmtAction;
 import hu.bme.mit.theta.analysis.expr.refinement.*;
 import hu.bme.mit.theta.analysis.pred.*;
 import hu.bme.mit.theta.analysis.pred.ExprSplitters.ExprSplitter;
 import hu.bme.mit.theta.analysis.pred.PredAbstractors.PredAbstractor;
+import hu.bme.mit.theta.analysis.prod2.PredXExpl.PredXExplTransFunc;
 import hu.bme.mit.theta.analysis.prod2.PredXExpl.Prod2RefToPrec;
 import hu.bme.mit.theta.analysis.prod2.Prod2Analysis;
 import hu.bme.mit.theta.analysis.prod2.Prod2Prec;
@@ -411,8 +411,11 @@ public class CfaConfigBuilder {
 						throw new UnsupportedOperationException(predDomain + " predicate domain is not supported by " + domain);
 			}
 
+			Analysis<PredState, ExprAction, PredPrec> predAnalysis = PredAnalysis.create(solver, predAbstractor, True());
+			Analysis<ExplState, StmtAction, ExplPrec> explAnalysis = ExplStmtAnalysis.create(solver, True(), maxEnum);
+			TransFunc<Prod2State<PredState, ExplState>, ExprAction, Prod2Prec<PredPrec, ExplPrec>> transFunc = PredXExplTransFunc.create(predAnalysis.getTransFunc(), explAnalysis.getTransFunc());
 			final Analysis<CfaState<Prod2State<PredState,ExplState>>, CfaAction, CfaPrec<Prod2Prec<PredPrec,ExplPrec>>> analysis = CfaAnalysis
-					.create(cfa.getInitLoc(), Prod2Analysis.create(PredAnalysis.create(solver, predAbstractor, True()) ,ExplStmtAnalysis.create(solver, True(), maxEnum)));
+					.create(cfa.getInitLoc(), Prod2Analysis.create(predAnalysis, explAnalysis, transFunc));
 			final ArgBuilder<CfaState<Prod2State<PredState,ExplState>>, CfaAction, CfaPrec<Prod2Prec<PredPrec,ExplPrec>>> argBuilder = ArgBuilder.create(lts,
 					analysis, s -> s.getLoc().equals(cfa.getErrorLoc()), true);
 

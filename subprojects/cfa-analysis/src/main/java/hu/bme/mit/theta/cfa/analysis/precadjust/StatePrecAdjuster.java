@@ -46,7 +46,7 @@ public class StatePrecAdjuster implements PrecAdjuster<CfaState<Prod2State<PredS
 	public CfaPrec<Prod2Prec<PredPrec, ExplPrec>> adjust(CfaPrec<Prod2Prec<PredPrec, ExplPrec>> prec, ArgNode<CfaState<Prod2State<PredState, ExplState>>, CfaAction> node) {
 		checkNotNull(node);
 		checkNotNull(prec);
-		boolean removed = true;
+
 		CFA.Loc loc = node.getState().getLoc();
 		Set<VarDecl<?>> dropouts = prec.getPrec(loc).getDropouts();
 
@@ -56,7 +56,7 @@ public class StatePrecAdjuster implements PrecAdjuster<CfaState<Prod2State<PredS
 		ExplPrec newPrec = prec.getPrec(loc).getPrec2();
 
 		for (final ExprAction action : actions) {
-
+			boolean removed = true;
 			Collection<ExplState> result = null;
 			while (removed) {
 				removed = false;
