@@ -21,10 +21,7 @@ import hu.bme.mit.theta.analysis.algorithm.ArgNodeComparators;
 import hu.bme.mit.theta.analysis.algorithm.ArgNodeComparators.ArgNodeComparator;
 
 import hu.bme.mit.theta.analysis.algorithm.SafetyChecker;
-import hu.bme.mit.theta.analysis.algorithm.cegar.Abstractor;
-import hu.bme.mit.theta.analysis.algorithm.cegar.BasicAbstractor;
-import hu.bme.mit.theta.analysis.algorithm.cegar.CegarChecker;
-import hu.bme.mit.theta.analysis.algorithm.cegar.Refiner;
+import hu.bme.mit.theta.analysis.algorithm.cegar.*;
 import hu.bme.mit.theta.analysis.algorithm.cegar.abstractor.StopCriterions;
 import hu.bme.mit.theta.analysis.expl.*;
 import hu.bme.mit.theta.analysis.expr.ExprAction;
@@ -34,6 +31,7 @@ import hu.bme.mit.theta.analysis.expr.refinement.*;
 import hu.bme.mit.theta.analysis.pred.*;
 import hu.bme.mit.theta.analysis.pred.ExprSplitters.ExprSplitter;
 import hu.bme.mit.theta.analysis.pred.PredAbstractors.PredAbstractor;
+import hu.bme.mit.theta.analysis.prod2.PredXExpl.PredXExplOrd;
 import hu.bme.mit.theta.analysis.prod2.PredXExpl.PredXExplTransFunc;
 import hu.bme.mit.theta.analysis.prod2.PredXExpl.Prod2RefToPrec;
 import hu.bme.mit.theta.analysis.prod2.Prod2Analysis;
@@ -81,7 +79,7 @@ public class CfaConfigBuilder {
 	;
 
 	public enum PrecAdjust {
-		NO_OP, STATE, PATH_T, PATH_NO_T, ARG_T, ARG_NO_T;
+		NO_OP, STATE, PATH_T, PATH_NO_T, ARG_T, ARG_NO_T, ARG_ONE_PRED, ARG_WHOLE_PRED, DYNAMIC;
 	}
 
 	;
@@ -208,6 +206,8 @@ public class CfaConfigBuilder {
 	private int maxEnum = 0;
 	private InitPrec initPrec = InitPrec.EMPTY;
 	private int limit = 5;
+	private boolean share = true;
+	private int secondFirst = 0;
 
 	public CfaConfigBuilder(final Domain domain, final Refinement refinement, final PrecAdjust precAdjust, final SolverFactory solverFactory) {
 		this.domain = domain;
@@ -221,8 +221,18 @@ public class CfaConfigBuilder {
 		return this;
 	}
 
+	public CfaConfigBuilder share(final boolean share){
+		this.share = share;
+		return this;
+	}
+
 	public CfaConfigBuilder predDomain(final PredDomain predDomain){
 		this.predDomain = predDomain;
+		return this;
+	}
+
+	public CfaConfigBuilder secondFirst(final int secondFirst){
+		this.secondFirst = secondFirst;
 		return this;
 	}
 
@@ -413,9 +423,10 @@ public class CfaConfigBuilder {
 
 			Analysis<PredState, ExprAction, PredPrec> predAnalysis = PredAnalysis.create(solver, predAbstractor, True());
 			Analysis<ExplState, StmtAction, ExplPrec> explAnalysis = ExplStmtAnalysis.create(solver, True(), maxEnum);
-			TransFunc<Prod2State<PredState, ExplState>, ExprAction, Prod2Prec<PredPrec, ExplPrec>> transFunc = PredXExplTransFunc.create(predAnalysis.getTransFunc(), explAnalysis.getTransFunc());
+			TransFunc<Prod2State<PredState, ExplState>, ExprAction, Prod2Prec<PredPrec, ExplPrec>> transFunc = PredXExplTransFunc.create(predAnalysis.getTransFunc(), explAnalysis.getTransFunc(), share);
+			PartialOrd<Prod2State<PredState, ExplState>> partialOrd = PredXExplOrd.create(predAnalysis.getPartialOrd(), explAnalysis.getPartialOrd(), secondFirst);
 			final Analysis<CfaState<Prod2State<PredState,ExplState>>, CfaAction, CfaPrec<Prod2Prec<PredPrec,ExplPrec>>> analysis = CfaAnalysis
-					.create(cfa.getInitLoc(), Prod2Analysis.create(predAnalysis, explAnalysis, transFunc));
+					.create(cfa.getInitLoc(), Prod2Analysis.create(partialOrd, predAnalysis, explAnalysis, transFunc));
 			final ArgBuilder<CfaState<Prod2State<PredState,ExplState>>, CfaAction, CfaPrec<Prod2Prec<PredPrec,ExplPrec>>> argBuilder = ArgBuilder.create(lts,
 					analysis, s -> s.getLoc().equals(cfa.getErrorLoc()), true);
 
@@ -424,35 +435,56 @@ public class CfaConfigBuilder {
 			switch (precAdjust){
 				case STATE:
 					abstractor = BasicAbstractor
-							.builder(argBuilder, StatePrecAdjuster.create(solver, limit, lts)).projection(CfaState::getLoc)
+							.builder(argBuilder, CfaStatePrecAdjuster.create(solver, limit, lts)).projection(CfaState::getLoc)
 							.waitlist(PriorityWaitlist.create(search.getComp(cfa)))
 							.stopCriterion(refinement == Refinement.MULTI_SEQ ? StopCriterions.fullExploration()
 									: StopCriterions.firstCex()).logger(logger).build();
 					break;
 				case ARG_NO_T:
 					abstractor = BasicAbstractor
-							.builder(argBuilder, ArgPrecAdjuster.create(solver, limit, lts)).projection(CfaState::getLoc)
+							.builder(argBuilder, CfaArgPrecAdjuster.create(solver, limit, lts)).projection(CfaState::getLoc)
 							.waitlist(PriorityWaitlist.create(search.getComp(cfa)))
 							.stopCriterion(refinement == Refinement.MULTI_SEQ ? StopCriterions.fullExploration()
 									: StopCriterions.firstCex()).logger(logger).build();
 					break;
 				case ARG_T:
 					abstractor = BasicAbstractor
-							.builder(argBuilder, ArgPrecAdjusterWithT.create(limit)).projection(CfaState::getLoc)
+							.builder(argBuilder, CfaArgPrecAdjusterWithT.create(limit)).projection(CfaState::getLoc)
 							.waitlist(PriorityWaitlist.create(search.getComp(cfa)))
 							.stopCriterion(refinement == Refinement.MULTI_SEQ ? StopCriterions.fullExploration()
 									: StopCriterions.firstCex()).logger(logger).build();
 					break;
 				case PATH_NO_T:
 					abstractor = BasicAbstractor
-							.builder(argBuilder, PathPrecAdjuster.create(solver, limit, lts)).projection(CfaState::getLoc)
+							.builder(argBuilder, CfaPathPrecAdjuster.create(solver, limit, lts)).projection(CfaState::getLoc)
 							.waitlist(PriorityWaitlist.create(search.getComp(cfa)))
 							.stopCriterion(refinement == Refinement.MULTI_SEQ ? StopCriterions.fullExploration()
 									: StopCriterions.firstCex()).logger(logger).build();
 					break;
 				case PATH_T:
 					abstractor = BasicAbstractor
-							.builder(argBuilder, PathPrecAdjusterWithT.create(limit)).projection(CfaState::getLoc)
+							.builder(argBuilder, CfaPathPrecAdjusterWithT.create(limit)).projection(CfaState::getLoc)
+							.waitlist(PriorityWaitlist.create(search.getComp(cfa)))
+							.stopCriterion(refinement == Refinement.MULTI_SEQ ? StopCriterions.fullExploration()
+									: StopCriterions.firstCex()).logger(logger).build();
+					break;
+				case ARG_ONE_PRED:
+					abstractor = BasicAbstractor
+							.builder(argBuilder, ArgOnePredPrecAdjuster.create(solver, limit, lts, cfa.getVars())).projection(CfaState::getLoc)
+							.waitlist(PriorityWaitlist.create(search.getComp(cfa)))
+							.stopCriterion(refinement == Refinement.MULTI_SEQ ? StopCriterions.fullExploration()
+									: StopCriterions.firstCex()).logger(logger).build();
+					break;
+				case ARG_WHOLE_PRED:
+					abstractor = BasicAbstractor
+							.builder(argBuilder, ArgWholePredPrecAdjuster.create(solver, limit, lts, cfa.getVars())).projection(CfaState::getLoc)
+							.waitlist(PriorityWaitlist.create(search.getComp(cfa)))
+							.stopCriterion(refinement == Refinement.MULTI_SEQ ? StopCriterions.fullExploration()
+									: StopCriterions.firstCex()).logger(logger).build();
+					break;
+				case DYNAMIC:
+					abstractor = BasicAbstractor
+							.builder(argBuilder, DynamicPrecAdjuster.create(solver, limit, lts, cfa)).projection(CfaState::getLoc)
 							.waitlist(PriorityWaitlist.create(search.getComp(cfa)))
 							.stopCriterion(refinement == Refinement.MULTI_SEQ ? StopCriterions.fullExploration()
 									: StopCriterions.firstCex()).logger(logger).build();

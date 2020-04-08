@@ -21,13 +21,14 @@ import hu.bme.mit.theta.analysis.Prec;
 import hu.bme.mit.theta.common.Utils;
 import hu.bme.mit.theta.core.decl.VarDecl;
 
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
 public final class Prod2Prec<P1 extends Prec, P2 extends Prec> implements Prec {
 	private static final int HASH_SEED = 2267;
 	private volatile int hashCode = 0;
-	private Set<VarDecl<?>> dropouts;
+	private Collection<VarDecl<?>> dropouts;
 
 
 	private final P1 prec1;
@@ -39,7 +40,7 @@ public final class Prod2Prec<P1 extends Prec, P2 extends Prec> implements Prec {
 		dropouts = new HashSet<>();
 	}
 
-	private Prod2Prec(final P1 prec1, final P2 prec2, Set<VarDecl<?>> dropouts) {
+	private Prod2Prec(final P1 prec1, final P2 prec2, Collection<VarDecl<?>> dropouts) {
 		this.prec1 = checkNotNull(prec1);
 		this.prec2 = checkNotNull(prec2);
 		this.dropouts = dropouts;
@@ -49,7 +50,7 @@ public final class Prod2Prec<P1 extends Prec, P2 extends Prec> implements Prec {
 		return new Prod2Prec<>(prec1, prec2);
 	}
 
-	public static <P1 extends Prec, P2 extends Prec> Prod2Prec<P1, P2> of(final P1 prec1, final P2 prec2, Set<VarDecl<?>> dropouts) {
+	public static <P1 extends Prec, P2 extends Prec> Prod2Prec<P1, P2> of(final P1 prec1, final P2 prec2, Collection<VarDecl<?>> dropouts) {
 		return new Prod2Prec<>(prec1, prec2, dropouts);
 	}
 
@@ -85,15 +86,15 @@ public final class Prod2Prec<P1 extends Prec, P2 extends Prec> implements Prec {
 		}
 	}
 
-	public Set<VarDecl<?>> getDropouts() {
+	public Collection<VarDecl<?>> getDropouts() {
 		return dropouts;
 	}
 
-	public void setDropouts(Set<VarDecl<?>> dropouts) {
+	public void setDropouts(Collection<VarDecl<?>> dropouts) {
 		this.dropouts = dropouts;
 	}
 
-	public void addDropouts(Set<VarDecl<?>> dropouts){
+	public void addDropouts(Collection<VarDecl<?>> dropouts){
 		this.dropouts.addAll(dropouts);
 	}
 

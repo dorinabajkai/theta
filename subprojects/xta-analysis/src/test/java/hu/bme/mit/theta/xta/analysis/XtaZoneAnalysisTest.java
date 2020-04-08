@@ -22,7 +22,9 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.stream.Collectors;
 
+import hu.bme.mit.theta.analysis.PartialOrd;
 import hu.bme.mit.theta.analysis.algorithm.cegar.NoOpPrecAdjuster;
+import hu.bme.mit.theta.analysis.prod2.Prod2Ord;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -81,8 +83,9 @@ public final class XtaZoneAnalysisTest {
 		final LTS<XtaState<?>, XtaAction> lts = XtaLts.create(system);
 		final Analysis<ExplState, XtaAction, UnitPrec> explAnalysis = XtaExplAnalysis.create(system);
 		final Analysis<ZoneState, XtaAction, ZonePrec> zoneAnalysis = XtaZoneAnalysis.getInstance();
+		final PartialOrd<Prod2State<ExplState, ZoneState>> partialOrd = Prod2Ord.create(explAnalysis.getPartialOrd(), zoneAnalysis.getPartialOrd(), 0);
 		final Analysis<Prod2State<ExplState, ZoneState>, XtaAction, Prod2Prec<UnitPrec, ZonePrec>> prodAnalysis = Prod2Analysis
-				.create(explAnalysis, zoneAnalysis);
+				.create(partialOrd, explAnalysis, zoneAnalysis);
 		final Analysis<Prod2State<ExplState, ZoneState>, XtaAction, ZonePrec> mappedAnalysis = PrecMappingAnalysis
 				.create(prodAnalysis, z -> Prod2Prec.of(UnitPrec.getInstance(), z));
 		final Analysis<XtaState<Prod2State<ExplState, ZoneState>>, XtaAction, ZonePrec> analysis = XtaAnalysis

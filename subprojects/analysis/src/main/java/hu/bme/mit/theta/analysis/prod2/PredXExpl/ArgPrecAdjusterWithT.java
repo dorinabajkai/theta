@@ -1,6 +1,8 @@
 package hu.bme.mit.theta.analysis.prod2.PredXExpl;
 
+import hu.bme.mit.theta.analysis.State;
 import hu.bme.mit.theta.analysis.algorithm.ArgNode;
+import hu.bme.mit.theta.analysis.algorithm.cegar.ExplStateFromState;
 import hu.bme.mit.theta.analysis.algorithm.cegar.PrecAdjuster;
 import hu.bme.mit.theta.analysis.expl.ExplPrec;
 import hu.bme.mit.theta.analysis.expl.ExplState;
@@ -14,22 +16,24 @@ import hu.bme.mit.theta.core.type.NullaryExpr;
 
 import java.util.*;
 
-public class ArgPrecAdjusterWithT implements PrecAdjuster<Prod2State<PredState, ExplState>, ExprAction, Prod2Prec<PredPrec, ExplPrec>> {
+public class ArgPrecAdjusterWithT<S extends State> implements PrecAdjuster<S, ExprAction, Prod2Prec<PredPrec, ExplPrec>> {
 	private Map<VarDecl, Collection<NullaryExpr<?>>> varValues;
 	private int limit;
+	private ExplStateFromState<S> op;
 
-	private ArgPrecAdjusterWithT(int limit){
+	private ArgPrecAdjusterWithT(int limit, ExplStateFromState<S> op){
 		this.limit = limit;
 		varValues = new HashMap<>();
+		this.op = op;
 	}
 
-	public static ArgPrecAdjusterWithT create(final int limit){
-		return new ArgPrecAdjusterWithT(limit);
+	public static <S extends State>ArgPrecAdjusterWithT create(final int limit, ExplStateFromState<S> op){
+		return new ArgPrecAdjusterWithT(limit, op);
 	}
 
 	@Override
-	public Prod2Prec<PredPrec, ExplPrec> adjust(Prod2Prec<PredPrec, ExplPrec> prec, ArgNode<Prod2State<PredState, ExplState>, ExprAction> node) {
-		Set<VarDecl<?>> dropouts = prec.getDropouts();
+	public Prod2Prec<PredPrec, ExplPrec> adjust(Prod2Prec<PredPrec, ExplPrec> prec, ArgNode<S, ExprAction> node) {
+		Collection<VarDecl<?>> dropouts = prec.getDropouts();
 
 		varValues = addVars(varValues, node);
 
@@ -45,8 +49,8 @@ public class ArgPrecAdjusterWithT implements PrecAdjuster<Prod2State<PredState, 
 		return Prod2Prec.of(prec.getPrec1(), ExplPrec.of(vars), dropouts);
 	}
 
-	public Map<VarDecl, Collection<NullaryExpr<?>>> addVars (Map<VarDecl, Collection<NullaryExpr<?>>> counter, ArgNode<Prod2State<PredState, ExplState>, ExprAction> node){
-		ExplState state = node.getState().getState2();
+	public Map<VarDecl, Collection<NullaryExpr<?>>> addVars (Map<VarDecl, Collection<NullaryExpr<?>>> counter, ArgNode<S, ExprAction> node){
+		ExplState state = op.toExplState(node.getState());
 		for ( VarDecl var : (Collection<? extends VarDecl<?>>) state.getDecls()) {
 			if (counter.containsKey(var)) {
 				if (counter.get(var).contains(state.eval(var).get()))

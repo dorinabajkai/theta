@@ -21,10 +21,12 @@ import java.util.Collection;
 import java.util.function.Function;
 
 import hu.bme.mit.theta.analysis.Analysis;
+import hu.bme.mit.theta.analysis.PartialOrd;
 import hu.bme.mit.theta.analysis.State;
 import hu.bme.mit.theta.analysis.algorithm.ArgNode;
 import hu.bme.mit.theta.analysis.impl.PrecMappingAnalysis;
 import hu.bme.mit.theta.analysis.prod2.Prod2Analysis;
+import hu.bme.mit.theta.analysis.prod2.Prod2Ord;
 import hu.bme.mit.theta.analysis.prod2.Prod2Prec;
 import hu.bme.mit.theta.analysis.prod2.Prod2State;
 import hu.bme.mit.theta.analysis.unit.UnitPrec;
@@ -99,8 +101,9 @@ final class CombinedStrategy<S1 extends State, S2 extends State>
 	private Analysis<XtaState<Prod2State<S1, S2>>, XtaAction, UnitPrec> createAnalysis(final XtaSystem system) {
 		final Analysis<S1, XtaAction, UnitPrec> analysis1 = strategy1.getAnalysis();
 		final Analysis<S2, XtaAction, UnitPrec> analysis2 = strategy2.getAnalysis();
+		final PartialOrd<Prod2State<S1, S2>> partialOrd = Prod2Ord.create(analysis1.getPartialOrd(), analysis2.getPartialOrd(), 0);
 		final Analysis<Prod2State<S1, S2>, XtaAction, Prod2Prec<UnitPrec, UnitPrec>> prodAnalysis = Prod2Analysis
-				.create(analysis1, analysis2);
+				.create(partialOrd, analysis1, analysis2);
 		final Analysis<XtaState<Prod2State<S1, S2>>, XtaAction, Prod2Prec<UnitPrec, UnitPrec>> xtaAnalysis = XtaAnalysis
 				.create(system, prodAnalysis);
 		final Prod2Prec<UnitPrec, UnitPrec> prec = Prod2Prec.of(UnitPrec.getInstance(), UnitPrec.getInstance());

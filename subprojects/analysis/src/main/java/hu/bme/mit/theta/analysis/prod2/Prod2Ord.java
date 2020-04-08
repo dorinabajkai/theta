@@ -20,19 +20,23 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import hu.bme.mit.theta.analysis.PartialOrd;
 import hu.bme.mit.theta.analysis.State;
 
-final class Prod2Ord<S1 extends State, S2 extends State> implements PartialOrd<Prod2State<S1, S2>> {
+public final class Prod2Ord<S1 extends State, S2 extends State> implements PartialOrd<Prod2State<S1, S2>> {
 
 	private final PartialOrd<S1> partialOrd1;
 	private final PartialOrd<S2> partialOrd2;
+	private final int secondFirst;
 
-	private Prod2Ord(final PartialOrd<S1> partialOrd1, final PartialOrd<S2> partialOrd2) {
+
+	private Prod2Ord(final PartialOrd<S1> partialOrd1, final PartialOrd<S2> partialOrd2, final int secondFirst) {
 		this.partialOrd1 = checkNotNull(partialOrd1);
 		this.partialOrd2 = checkNotNull(partialOrd2);
+		this.secondFirst = secondFirst;
 	}
 
 	public static <S1 extends State, S2 extends State> Prod2Ord<S1, S2> create(final PartialOrd<S1> partialOrd1,
-																			   final PartialOrd<S2> partialOrd2) {
-		return new Prod2Ord<>(partialOrd1, partialOrd2);
+																			   final PartialOrd<S2> partialOrd2,
+																			   final int secondFirst) {
+		return new Prod2Ord<>(partialOrd1, partialOrd2, secondFirst);
 	}
 
 	@Override
@@ -41,8 +45,10 @@ final class Prod2Ord<S1 extends State, S2 extends State> implements PartialOrd<P
 			return true;
 		} else if (state2.isBottom()) {
 			return false;
-		} else {
+		} else if (secondFirst == 0){
 			return partialOrd1.isLeq(state1.getState1(), state2.getState1()) && partialOrd2.isLeq(state1.getState2(), state2.getState2());
+		} else {
+			return partialOrd2.isLeq(state1.getState2(), state2.getState2()) && partialOrd1.isLeq(state1.getState1(), state2.getState1());
 		}
 	}
 

@@ -7,6 +7,7 @@ import hu.bme.mit.theta.analysis.expl.ExplState;
 import hu.bme.mit.theta.analysis.expr.ExprAction;
 import hu.bme.mit.theta.analysis.pred.PredPrec;
 import hu.bme.mit.theta.analysis.pred.PredState;
+import hu.bme.mit.theta.analysis.prod2.PredXExpl.ArgPrecAdjuster;
 import hu.bme.mit.theta.analysis.prod2.Prod2Prec;
 import hu.bme.mit.theta.analysis.prod2.Prod2State;
 import hu.bme.mit.theta.cfa.CFA;
@@ -27,22 +28,22 @@ import java.util.*;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static hu.bme.mit.theta.core.type.booltype.BoolExprs.Not;
 
-public class ArgPrecAdjuster implements PrecAdjuster<CfaState<Prod2State<PredState, ExplState>>, CfaAction, CfaPrec<Prod2Prec<PredPrec, ExplPrec>>> {
+public class CfaArgPrecAdjuster implements PrecAdjuster<CfaState<Prod2State<PredState, ExplState>>, CfaAction, CfaPrec<Prod2Prec<PredPrec, ExplPrec>>> {
 
 	private final Solver solver;
 	private final int limit;
 	private final CfaLts lts;
 	private Map<VarDecl, Collection<NullaryExpr<?>>> varValues;
 
-	private ArgPrecAdjuster(final Solver solver, final int limit, final CfaLts lts){
+	private CfaArgPrecAdjuster(final Solver solver, final int limit, final CfaLts lts){
 		this.solver = solver;
 		this.limit = limit;
 		this.lts = lts;
 		varValues = new HashMap<>();
 	}
 
-	public static ArgPrecAdjuster create(final Solver solver, final int limit, final CfaLts lts){
-		return new ArgPrecAdjuster(solver, limit, lts);
+	public static CfaArgPrecAdjuster create(final Solver solver, final int limit, final CfaLts lts){
+		return new CfaArgPrecAdjuster(solver, limit, lts);
 	}
 
 
@@ -51,10 +52,12 @@ public class ArgPrecAdjuster implements PrecAdjuster<CfaState<Prod2State<PredSta
 		checkNotNull(node);
 		checkNotNull(prec);
 		CFA.Loc loc = node.getState().getLoc();
-		Set<VarDecl<?>> dropouts = prec.getPrec(loc).getDropouts();
+		Collection<VarDecl<?>> dropouts = prec.getPrec(loc).getDropouts();
 		final ExplState state = node.getState().getState().getState2();
 		final Collection<? extends CfaAction> actions = lts.getEnabledActionsFor(node.getState());
 
+		//ArgPrecAdjuster precAdjuster = ArgPrecAdjuster.create(solver, limit, lts, (CfaState<Prod2State<PredState, ExplState>> cfaState) -> cfaState.getState().getState2());
+		//return prec.refine(loc, precAdjuster.adjust(prec.getPrec(loc), node));
 		ExplPrec newPrec = prec.getPrec(loc).getPrec2();
 
 		for (final ExprAction action : actions) {

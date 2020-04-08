@@ -6,6 +6,7 @@ import hu.bme.mit.theta.analysis.expl.ExplPrec;
 import hu.bme.mit.theta.analysis.expl.ExplState;
 import hu.bme.mit.theta.analysis.pred.PredPrec;
 import hu.bme.mit.theta.analysis.pred.PredState;
+import hu.bme.mit.theta.analysis.prod2.PredXExpl.ArgPrecAdjusterWithT;
 import hu.bme.mit.theta.analysis.prod2.Prod2Prec;
 import hu.bme.mit.theta.analysis.prod2.Prod2State;
 import hu.bme.mit.theta.cfa.CFA;
@@ -17,42 +18,39 @@ import hu.bme.mit.theta.core.type.NullaryExpr;
 
 import java.util.*;
 
-public class PathPrecAdjusterWithT implements PrecAdjuster<CfaState<Prod2State<PredState, ExplState>>, CfaAction, CfaPrec<Prod2Prec<PredPrec, ExplPrec>>> {
+public class CfaArgPrecAdjusterWithT implements PrecAdjuster<CfaState<Prod2State<PredState, ExplState>>, CfaAction, CfaPrec<Prod2Prec<PredPrec, ExplPrec>>> {
+	private Map<VarDecl, Collection<NullaryExpr<?>>> varValues;
 	private int limit;
 
-	private PathPrecAdjusterWithT(int limit){
+	private CfaArgPrecAdjusterWithT(int limit){
 		this.limit = limit;
+		varValues = new HashMap<>();
 	}
 
-	public static PathPrecAdjusterWithT create(final int limit){
-		return new PathPrecAdjusterWithT(limit);
+	public static CfaArgPrecAdjusterWithT create(final int limit){
+		return new CfaArgPrecAdjusterWithT(limit);
 	}
 
 	@Override
 	public CfaPrec<Prod2Prec<PredPrec, ExplPrec>> adjust(CfaPrec<Prod2Prec<PredPrec, ExplPrec>> prec, ArgNode<CfaState<Prod2State<PredState, ExplState>>, CfaAction> node) {
-		CFA.Loc loc = node.getState().getLoc();
+//		CFA.Loc loc = node.getState().getLoc();
 
-		Set<VarDecl<?>> dropouts = prec.getPrec(loc).getDropouts();
+//		ArgPrecAdjusterWithT precAdjuster = ArgPrecAdjusterWithT.create(limit, (CfaState<Prod2State<PredState, ExplState>> cfaState) -> cfaState.getState().getState2());
+//		return prec.refine(loc, precAdjuster.adjust(prec.getPrec(loc), node));
 
-		Map<VarDecl, Collection<NullaryExpr<?>>> counter = new HashMap<>();
-		Object[] ancestors = node.ancestors().toArray();
-		for(Object a :  ancestors){
-			ArgNode<CfaState<Prod2State<PredState, ExplState>>, CfaAction> thisnode = (ArgNode<CfaState<Prod2State<PredState, ExplState>>, CfaAction>) a;
-			counter = addVars(counter, thisnode);
-		}
+		Collection<VarDecl<?>> dropouts = prec.getPrec(node.getState().getLoc()).getDropouts();
 
-		counter = addVars(counter, node);
+		varValues = addVars(varValues, node);
 
-		Collection<VarDecl<?>> vars = new ArrayList<>(prec.getPrec(loc).getPrec2().getVars());
-		for (VarDecl var : counter.keySet()) {
-			Collection<NullaryExpr<?>> values = counter.get(var);
+		Collection<VarDecl<?>> vars = new ArrayList<>(prec.getPrec(node.getState().getLoc()).getPrec2().getVars());
+		for (VarDecl var : varValues.keySet()) {
+			Collection<NullaryExpr<?>> values = varValues.get(var);
 			if (values.size() > limit) {
 				dropouts.add(var);
 				vars.remove(var);
 			}
 		}
-
-		return prec.refine(loc, Prod2Prec.of(prec.getPrec(loc).getPrec1(), ExplPrec.of(vars), dropouts));
+		return prec.refine(node.getState().getLoc(), Prod2Prec.of(prec.getPrec(node.getState().getLoc()).getPrec1(), ExplPrec.of(vars), dropouts));
 	}
 
 	private Map<VarDecl, Collection<NullaryExpr<?>>> addVars (Map<VarDecl, Collection<NullaryExpr<?>>> counter, ArgNode<CfaState<Prod2State<PredState, ExplState>>, CfaAction> node){

@@ -1,7 +1,9 @@
 package hu.bme.mit.theta.analysis.prod2.PredXExpl;
 
 import hu.bme.mit.theta.analysis.LTS;
+import hu.bme.mit.theta.analysis.State;
 import hu.bme.mit.theta.analysis.algorithm.ArgNode;
+import hu.bme.mit.theta.analysis.algorithm.cegar.ExplStateFromState;
 import hu.bme.mit.theta.analysis.algorithm.cegar.PrecAdjuster;
 import hu.bme.mit.theta.analysis.expl.ExplPrec;
 import hu.bme.mit.theta.analysis.expl.ExplState;
@@ -23,30 +25,32 @@ import java.util.*;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static hu.bme.mit.theta.core.type.booltype.BoolExprs.Not;
 
-public class StatePrecAdjuster implements PrecAdjuster<Prod2State<PredState, ExplState>, ExprAction, Prod2Prec<PredPrec, ExplPrec>> {
+public class StatePrecAdjuster<S extends State> implements PrecAdjuster<S, ExprAction, Prod2Prec<PredPrec, ExplPrec>> {
 	private int limit;
-	private final LTS<? super ExplState, ? extends ExprAction> lts;
+	private final LTS lts;
 	private Solver solver;
+	private ExplStateFromState<S> op;
 
-	private StatePrecAdjuster(int limit, final LTS<? super ExplState, ? extends ExprAction> lts, Solver solver) {
+	private StatePrecAdjuster(int limit, final LTS<? super ExplState, ? extends ExprAction> lts, Solver solver, ExplStateFromState<S> op) {
 		this.limit = limit;
 		this.lts = lts;
 		this.solver = solver;
+		this.op = op;
 	}
 
-	public static StatePrecAdjuster create(final Solver solver, final int limit, final LTS<? super ExplState, ? extends ExprAction> lts){
-		return new StatePrecAdjuster(limit, lts, solver);
+	public static <S extends State>StatePrecAdjuster create(final Solver solver, final int limit, final LTS lts, ExplStateFromState<S> op){
+		return new StatePrecAdjuster(limit, lts, solver, op);
 	}
 
 	@Override
-	public Prod2Prec<PredPrec, ExplPrec> adjust(Prod2Prec<PredPrec, ExplPrec> prec, ArgNode<Prod2State<PredState, ExplState>, ExprAction> node) {
+	public Prod2Prec<PredPrec, ExplPrec> adjust(Prod2Prec<PredPrec, ExplPrec> prec, ArgNode<S, ExprAction> node) {
 		checkNotNull(node);
 		checkNotNull(prec);
 		boolean removed = true;
-		Set<VarDecl<?>> dropouts = prec.getDropouts();
+		Collection<VarDecl<?>> dropouts = prec.getDropouts();
 
-		final ExplState state = node.getState().getState2();
-		final Collection<? extends ExprAction> actions = lts.getEnabledActionsFor(state);
+		final ExplState state = op.toExplState(node.getState());
+		final Collection<? extends ExprAction> actions = lts.getEnabledActionsFor(node.getState());
 
 		ExplPrec newPrec = prec.getPrec2();
 

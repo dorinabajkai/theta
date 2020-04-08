@@ -23,23 +23,25 @@ public final class PredXExplTransFunc implements TransFunc<Prod2State<PredState,
 	private final TransFunc<PredState, ExprAction, PredPrec> transFunc1;
 	private final TransFunc<ExplState, StmtAction, ExplPrec> transFunc2;
 	private final StrengtheningOperator<PredState, ExplState, PredPrec, ExplPrec> strenghteningOperator;
+	private final boolean help;
 
 	private PredXExplTransFunc(final TransFunc<PredState, ExprAction, PredPrec> transFunc1, final TransFunc<ExplState, StmtAction, ExplPrec> transFunc2,
-						   final StrengtheningOperator<PredState, ExplState, PredPrec, ExplPrec> strenghteningOperator) {
+						   final StrengtheningOperator<PredState, ExplState, PredPrec, ExplPrec> strenghteningOperator, final boolean help) {
 		this.transFunc1 = checkNotNull(transFunc1);
 		this.transFunc2 = checkNotNull(transFunc2);
 		this.strenghteningOperator = checkNotNull(strenghteningOperator);
+		this.help = help;
 	}
 
 	public static PredXExplTransFunc create(
-			final TransFunc<PredState, ExprAction, PredPrec> transFunc1, final TransFunc<ExplState, StmtAction, ExplPrec> transFunc2) {
-		return create(transFunc1, transFunc2, (states, prec) -> states);
+			final TransFunc<PredState, ExprAction, PredPrec> transFunc1, final TransFunc<ExplState, StmtAction, ExplPrec> transFunc2, final boolean help) {
+		return create(transFunc1, transFunc2, (states, prec) -> states, help);
 	}
 
 	public static PredXExplTransFunc create(
 			final TransFunc<PredState, ExprAction, PredPrec> transFunc1, final TransFunc<ExplState, StmtAction, ExplPrec> transFunc2,
-			final StrengtheningOperator<PredState, ExplState, PredPrec, ExplPrec> strenghteningOperator) {
-		return new PredXExplTransFunc(transFunc1, transFunc2, strenghteningOperator);
+			final StrengtheningOperator<PredState, ExplState, PredPrec, ExplPrec> strenghteningOperator, final boolean help) {
+		return new PredXExplTransFunc(transFunc1, transFunc2, strenghteningOperator, help);
 	}
 
 	@Override
@@ -53,10 +55,19 @@ public final class PredXExplTransFunc implements TransFunc<Prod2State<PredState,
 			return singleton(state);
 		}
 
-		PredState pState = PredState.of(state.toExpr());
-		final Collection<? extends PredState> succStates1 = transFunc1.getSuccStates(pState, action,
-				prec.getPrec1());
-		final Optional<? extends PredState> optBottom1 = succStates1.stream().filter(State::isBottom).findAny();
+		Optional<? extends PredState> optBottom1 = null;
+		Collection<? extends PredState> succStates1 = null;
+
+		if(help) {
+			PredState pState = PredState.of(state.toExpr());
+			succStates1 = transFunc1.getSuccStates(pState, action,
+					prec.getPrec1());
+			optBottom1 = succStates1.stream().filter(State::isBottom).findAny();
+		} else {
+			succStates1 = transFunc1.getSuccStates(state.getState1(), action,
+					prec.getPrec1());
+			optBottom1 = succStates1.stream().filter(State::isBottom).findAny();
+		}
 
 		if (optBottom1.isPresent()) {
 			final PredState bottom1 = optBottom1.get();

@@ -2,7 +2,9 @@ package hu.bme.mit.theta.analysis.prod2.PredXExpl;
 
 import hu.bme.mit.theta.analysis.LTS;
 import hu.bme.mit.theta.analysis.Prec;
+import hu.bme.mit.theta.analysis.State;
 import hu.bme.mit.theta.analysis.algorithm.ArgNode;
+import hu.bme.mit.theta.analysis.algorithm.cegar.ExplStateFromState;
 import hu.bme.mit.theta.analysis.algorithm.cegar.PrecAdjuster;
 import hu.bme.mit.theta.analysis.expl.ExplPrec;
 import hu.bme.mit.theta.analysis.expl.ExplState;
@@ -24,40 +26,44 @@ import java.util.*;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static hu.bme.mit.theta.core.type.booltype.BoolExprs.Not;
 
-public class PathPrecAdjuster implements PrecAdjuster<Prod2State<PredState, ExplState>, ExprAction, Prod2Prec<PredPrec, ExplPrec>> {
+public class PathPrecAdjuster<S extends State> implements PrecAdjuster<S, ExprAction, Prod2Prec<PredPrec, ExplPrec>> {
 
 	private final Solver solver;
 	private final int limit;
 	private final LTS lts;
+	private ExplStateFromState<S> op;
 
-	private PathPrecAdjuster(final Solver solver, final int limit, final LTS lts) {
+
+	private PathPrecAdjuster(final Solver solver, final int limit, final LTS lts, ExplStateFromState<S> op) {
 		this.solver = checkNotNull(solver);
 		this.limit = limit;
 		this.lts = lts;
+		this.op = op;
 	}
 
-	public static PathPrecAdjuster create(final Solver solver, final int limit, final LTS<? super ExplState, ? extends ExprAction> lts){
-		return new PathPrecAdjuster(solver, limit, lts);
+	public static <S extends State>PathPrecAdjuster create(final Solver solver, final int limit, final LTS lts, ExplStateFromState<S> op){
+		return new PathPrecAdjuster(solver, limit, lts, op);
 	}
 
 	@Override
-	public Prod2Prec<PredPrec, ExplPrec> adjust(Prod2Prec<PredPrec, ExplPrec> prec, ArgNode<Prod2State<PredState, ExplState>, ExprAction> node) {
+	public Prod2Prec<PredPrec, ExplPrec> adjust(Prod2Prec<PredPrec, ExplPrec> prec, ArgNode<S, ExprAction> node) {
 		checkNotNull(node);
 		checkNotNull(prec);
 		boolean removed = true;
-		Set<VarDecl<?>> dropouts = prec.getDropouts();
+		Collection<VarDecl<?>> dropouts = prec.getDropouts();
 		Map<VarDecl, Collection<NullaryExpr<?>>> varValues = new HashMap<>();
+
 
 		Object[] ancestors = node.ancestors().toArray();
 		for(Object a :  ancestors){
-			ArgNode<Prod2State<PredState, ExplState>, ExprAction> thisnode = (ArgNode<Prod2State<PredState, ExplState>, ExprAction>) a;
+			ArgNode<S, ExprAction> thisnode = (ArgNode<S, ExprAction>) a;
 			varValues = addVars(varValues, thisnode);
 		}
 
 		varValues = addVars(varValues, node);
 
-		final ExplState state = node.getState().getState2();
-		final Collection<? extends ExprAction> actions = lts.getEnabledActionsFor(state);
+		final ExplState state = op.toExplState(node.getState());
+		final Collection<? extends ExprAction> actions = lts.getEnabledActionsFor(node.getState());
 
 		ExplPrec newPrec = prec.getPrec2();
 
@@ -111,8 +117,8 @@ public class PathPrecAdjuster implements PrecAdjuster<Prod2State<PredState, Expl
 		return Prod2Prec.of(prec.getPrec1(), newPrec, dropouts);
 	}
 
-	public Map<VarDecl, Collection<NullaryExpr<?>>> addVars (Map<VarDecl, Collection<NullaryExpr<?>>> counter, ArgNode<Prod2State<PredState, ExplState>, ExprAction> node){
-		ExplState state =  node.getState().getState2();
+	public Map<VarDecl, Collection<NullaryExpr<?>>> addVars (Map<VarDecl, Collection<NullaryExpr<?>>> counter, ArgNode<S, ExprAction> node){
+		ExplState state =  op.toExplState(node.getState());
 		for ( VarDecl var : (Collection<? extends VarDecl<?>>) state.getDecls()) {
 			if (counter.containsKey(var)) {
 				if (counter.get(var).contains(state.eval(var).get()))

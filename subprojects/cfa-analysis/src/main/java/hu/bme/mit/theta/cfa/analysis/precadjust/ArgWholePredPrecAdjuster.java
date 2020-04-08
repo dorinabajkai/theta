@@ -1,10 +1,6 @@
-package hu.bme.mit.theta.analysis.prod2.PredXExpl;
+package hu.bme.mit.theta.cfa.analysis.precadjust;
 
-import hu.bme.mit.theta.analysis.LTS;
-import hu.bme.mit.theta.analysis.Prec;
-import hu.bme.mit.theta.analysis.State;
 import hu.bme.mit.theta.analysis.algorithm.ArgNode;
-import hu.bme.mit.theta.analysis.algorithm.cegar.ExplStateFromState;
 import hu.bme.mit.theta.analysis.algorithm.cegar.PrecAdjuster;
 import hu.bme.mit.theta.analysis.expl.ExplPrec;
 import hu.bme.mit.theta.analysis.expl.ExplState;
@@ -13,6 +9,11 @@ import hu.bme.mit.theta.analysis.pred.PredPrec;
 import hu.bme.mit.theta.analysis.pred.PredState;
 import hu.bme.mit.theta.analysis.prod2.Prod2Prec;
 import hu.bme.mit.theta.analysis.prod2.Prod2State;
+import hu.bme.mit.theta.cfa.CFA;
+import hu.bme.mit.theta.cfa.analysis.CfaAction;
+import hu.bme.mit.theta.cfa.analysis.CfaPrec;
+import hu.bme.mit.theta.cfa.analysis.CfaState;
+import hu.bme.mit.theta.cfa.analysis.lts.CfaLts;
 import hu.bme.mit.theta.core.decl.VarDecl;
 import hu.bme.mit.theta.core.model.Valuation;
 import hu.bme.mit.theta.core.type.NullaryExpr;
@@ -21,49 +22,49 @@ import hu.bme.mit.theta.core.utils.PathUtils;
 import hu.bme.mit.theta.solver.Solver;
 import hu.bme.mit.theta.solver.utils.WithPushPop;
 
-import java.util.*;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static hu.bme.mit.theta.core.type.booltype.BoolExprs.Not;
 
-public class ArgPrecAdjuster <S extends State> implements PrecAdjuster<S, ExprAction, Prod2Prec<PredPrec, ExplPrec>> {
+public class ArgWholePredPrecAdjuster implements PrecAdjuster<CfaState<Prod2State<PredState, ExplState>>, CfaAction, CfaPrec<Prod2Prec<PredPrec, ExplPrec>>> {
 
 	private final Solver solver;
 	private final int limit;
-	private final LTS lts;
+	private final CfaLts lts;
 	private Map<VarDecl, Collection<NullaryExpr<?>>> varValues;
-	private ExplStateFromState<S> op;
+	private final Collection<VarDecl<?>> allVars;
+	private boolean removed = false;
 
-	private ArgPrecAdjuster(final Solver solver, final int limit, final LTS<? super ExplState, ? extends ExprAction> lts, ExplStateFromState<S> op){
+	private ArgWholePredPrecAdjuster(final Solver solver, final int limit, final CfaLts lts, final Collection<VarDecl<?>> allVars) {
 		this.solver = solver;
 		this.limit = limit;
 		this.lts = lts;
 		varValues = new HashMap<>();
-		this.op = op;
+		this.allVars = allVars;
 	}
 
-	public static <S extends State>ArgPrecAdjuster create(final Solver solver, final int limit, final LTS lts, ExplStateFromState<S> op){
-		return new ArgPrecAdjuster(solver, limit, lts, op);
+	public static ArgWholePredPrecAdjuster create(final Solver solver, final int limit, final CfaLts lts, final Collection<VarDecl<?>> allVars) {
+		return new ArgWholePredPrecAdjuster(solver, limit, lts, allVars);
 	}
 
 
-	@Override
-	public Prod2Prec<PredPrec, ExplPrec> adjust(Prod2Prec<PredPrec, ExplPrec> prec, ArgNode<S, ExprAction> node) {
+	public CfaPrec<Prod2Prec<PredPrec, ExplPrec>> adjust(CfaPrec<Prod2Prec<PredPrec, ExplPrec>> prec, ArgNode<CfaState<Prod2State<PredState, ExplState>>, CfaAction> node) {
 		checkNotNull(node);
 		checkNotNull(prec);
-		boolean removed = true;
-		Collection<VarDecl<?>> dropouts = prec.getDropouts();
+		if (!removed) {
+			CFA.Loc loc = node.getState().getLoc();
+			final ExplState state = node.getState().getState().getState2();
+			final Collection<? extends CfaAction> actions = lts.getEnabledActionsFor(node.getState());
 
-		final ExplState state = op.toExplState(node.getState());
-		final Collection<? extends ExprAction> actions = lts.getEnabledActionsFor(node.getState());
+			ExplPrec newPrec = prec.getPrec(loc).getPrec2();
 
-		ExplPrec newPrec = prec.getPrec2();
-
-		for (final ExprAction action : actions) {
-
-			Collection<ExplState> result = null;
-			while (removed) {
-				removed = false;
+			for (final ExprAction action : actions) {
+				Collection<ExplState> result = null;
 				try (WithPushPop wpp = new WithPushPop(solver)) {
 					solver.add(PathUtils.unfold(BoolExprs.And(state.toExpr(), action.toExpr()), 0));
 
@@ -85,20 +86,10 @@ public class ArgPrecAdjuster <S extends State> implements PrecAdjuster<S, ExprAc
 								val.add((NullaryExpr<?>) newState.eval(var).get());
 								varValues.put(var, val);
 							}
-						}
-						Collection<VarDecl<?>> vars = new ArrayList<>(newPrec.getVars());
-						Collection<VarDecl> varValuesKeys = new ArrayList<>(varValues.keySet());
-						for (VarDecl var : varValuesKeys) {
-							Collection<NullaryExpr<?>> values = varValues.get(var);
-							if (values.size() > limit) {
-								dropouts.add(var);
-								varValues.remove(var);
-								vars.remove(var);
+							if (varValues.values().size() > limit) {
 								removed = true;
+								return prec.refine(loc, Prod2Prec.of(prec.getPrec(loc).getPrec1(), ExplPrec.empty(), allVars));
 							}
-						}
-						if (removed) {
-							newPrec = ExplPrec.of(vars);
 						}
 
 						solver.add(Not(PathUtils.unfold(newState.toExpr(), action.nextIndexing())));
@@ -108,10 +99,9 @@ public class ArgPrecAdjuster <S extends State> implements PrecAdjuster<S, ExprAc
 
 
 			}
+
 		}
 
-		return Prod2Prec.of(prec.getPrec1(), newPrec, dropouts);
+		return prec;
 	}
-
 }
-

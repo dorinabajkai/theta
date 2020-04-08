@@ -81,6 +81,9 @@ public class CfaCli {
 	@Parameter(names = "--limit", description = "Limit for product abstraction strategies")
 	int limit = 5;
 
+	@Parameter(names = "--share", description = "Turn on or off data sharing between pred and expl")
+	boolean share = true;
+
 	@Parameter(names = "--search", description = "Search strategy")
 	Search search = Search.BFS;
 
@@ -101,6 +104,9 @@ public class CfaCli {
 
 	@Parameter(names = "--initprec", description = "Initial precision of abstraction")
 	InitPrec initPrec = InitPrec.EMPTY;
+
+	@Parameter(names = "--secondFirst", description = "Which state's covering to examine first for prod2 (0: first state, 1: second state, other: both pred)")
+	Integer secondFirst = 0;
 
 	@Parameter(names = "--loglevel", description = "Detailedness of logging")
 	Logger.Level logLevel = Level.SUBSTEP;
@@ -177,8 +183,8 @@ public class CfaCli {
 	}
 
 	private CfaConfig<?, ?, ?> buildConfiguration(final CFA cfa) {
-		return new CfaConfigBuilder(domain, refinement, precAdjust, solverFactory).limit(limit).precGranularity(precGranularity).search(search)
-				.predSplit(predSplit).predDomain(predDomain).encoding(encoding).maxEnum(maxEnum).initPrec(initPrec).logger(logger).build(cfa);
+		return new CfaConfigBuilder(domain, refinement, precAdjust, solverFactory).limit(limit).share(share).precGranularity(precGranularity).search(search)
+				.predSplit(predSplit).predDomain(predDomain).secondFirst(secondFirst).encoding(encoding).maxEnum(maxEnum).initPrec(initPrec).logger(logger).build(cfa);
 	}
 
 	private void printResult(final SafetyResult<?, ?> status, final CFA cfa, final long totalTimeMs) {
