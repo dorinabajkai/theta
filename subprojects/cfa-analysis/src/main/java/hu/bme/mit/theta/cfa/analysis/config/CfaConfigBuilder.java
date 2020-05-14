@@ -31,9 +31,7 @@ import hu.bme.mit.theta.analysis.expr.refinement.*;
 import hu.bme.mit.theta.analysis.pred.*;
 import hu.bme.mit.theta.analysis.pred.ExprSplitters.ExprSplitter;
 import hu.bme.mit.theta.analysis.pred.PredAbstractors.PredAbstractor;
-import hu.bme.mit.theta.analysis.prod2.PredXExpl.PredXExplOrd;
-import hu.bme.mit.theta.analysis.prod2.PredXExpl.PredXExplTransFunc;
-import hu.bme.mit.theta.analysis.prod2.PredXExpl.Prod2RefToPrec;
+import hu.bme.mit.theta.analysis.prod2.PredXExpl.*;
 import hu.bme.mit.theta.analysis.prod2.Prod2Analysis;
 import hu.bme.mit.theta.analysis.prod2.Prod2Prec;
 import hu.bme.mit.theta.analysis.prod2.Prod2State;
@@ -73,7 +71,7 @@ public class CfaConfigBuilder {
 	;
 
 	public enum Refinement {
-		FW_BIN_ITP, BW_BIN_ITP, SEQ_ITP, MULTI_SEQ, UNSAT_CORE, VAL_ITP;
+		FW_BIN_ITP, BW_BIN_ITP, SEQ_ITP, MULTI_SEQ, UNSAT_CORE, VAL_ITP, CEX_BASED;
 	}
 
 	;
@@ -489,6 +487,13 @@ public class CfaConfigBuilder {
 							.stopCriterion(refinement == Refinement.MULTI_SEQ ? StopCriterions.fullExploration()
 									: StopCriterions.firstCex()).logger(logger).build();
 					break;
+				case NO_OP:
+					abstractor = BasicAbstractor
+							.builder(argBuilder, NoOpPrecAdjuster.create()).projection(CfaState::getLoc)
+							.waitlist(PriorityWaitlist.create(search.getComp(cfa)))
+							.stopCriterion(refinement == Refinement.MULTI_SEQ ? StopCriterions.fullExploration()
+									: StopCriterions.firstCex()).logger(logger).build();
+					break;
 				default:
 					throw new UnsupportedOperationException(domain + " domain does not support " + precAdjust + " precision adjustment.");
 			}
@@ -507,6 +512,11 @@ public class CfaConfigBuilder {
 				case SEQ_ITP:
 					refiner = SingleExprTraceRefiner.create(ExprTraceSeqItpChecker.create(True(), True(), solver),
 							precGranularity.createRefiner(new Prod2RefToPrec(predSplit.splitter)), logger);
+					break;
+				case CEX_BASED:
+					Prod2Context context = new Prod2Context();
+					refiner = CounterExampleBasedRefiner.create(ExprTraceSeqItpChecker.create(True(), True(), solver),
+							precGranularity.createRefiner(new CexBasedProd2RefToPrec(predSplit.splitter, context)),context, logger);
 					break;
 				default:
 					throw new UnsupportedOperationException(
