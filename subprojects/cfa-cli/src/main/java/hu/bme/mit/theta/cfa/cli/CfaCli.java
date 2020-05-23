@@ -81,7 +81,7 @@ public class CfaCli {
 	@Parameter(names = "--limit", description = "Limit for product abstraction strategies")
 	int limit = 5;
 
-	@Parameter(names = "--share", description = "Turn on or off data sharing between pred and expl")
+	@Parameter(names = "--share", description = "Turn on or off data sharing between pred and expl", arity = 1)
 	boolean share = true;
 
 	@Parameter(names = "--search", description = "Search strategy")
