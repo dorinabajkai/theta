@@ -7,7 +7,6 @@ import hu.bme.mit.theta.analysis.expl.ExplState;
 import hu.bme.mit.theta.analysis.expr.ExprAction;
 import hu.bme.mit.theta.analysis.pred.PredPrec;
 import hu.bme.mit.theta.analysis.pred.PredState;
-import hu.bme.mit.theta.analysis.prod2.PredXExpl.StatePrecAdjuster;
 import hu.bme.mit.theta.analysis.prod2.Prod2Prec;
 import hu.bme.mit.theta.analysis.prod2.Prod2State;
 import hu.bme.mit.theta.cfa.CFA;
@@ -49,10 +48,6 @@ public class CfaStatePrecAdjuster implements PrecAdjuster<CfaState<Prod2State<Pr
 		checkNotNull(prec);
 
 		CFA.Loc loc = node.getState().getLoc();
-
-		/*StatePrecAdjuster precAdjuster = StatePrecAdjuster.create(solver, limit, lts, (CfaState<Prod2State<PredState, ExplState>> cfaState) -> cfaState.getState().getState2());
-		return prec.refine(loc, precAdjuster.adjust(prec.getPrec(loc), node));
-		CFA.Loc loc = node.getState().getLoc();*/
 		Collection<VarDecl<?>> dropouts = prec.getPrec(loc).getDropouts();
 
 		final ExplState state = node.getState().getState().getState2();
@@ -69,32 +64,29 @@ public class CfaStatePrecAdjuster implements PrecAdjuster<CfaState<Prod2State<Pr
 				try (WithPushPop wpp = new WithPushPop(solver)) {
 					solver.add(PathUtils.unfold(BoolExprs.And(state.toExpr(), action.toExpr()), 0));
 
-					result = new ArrayList<>();
 					while (solver.check().isSat() && !removed) {
 						final Valuation model = solver.getModel();
 						final Valuation valuation = PathUtils.extractValuation(model, action.nextIndexing());
 						final ExplState newState = newPrec.createState(valuation);
-						result.add(newState);
-						for (VarDecl var : (Collection<? extends VarDecl<?>>) newState.getDecls()) {
+						Collection<? extends VarDecl<?>> varsInState = (Collection<? extends VarDecl<?>>) newState.getDecls();
+						Collection<VarDecl<?>> vars = new ArrayList<>(newPrec.getVars());
+						for (VarDecl var : varsInState) {
+							NullaryExpr<?> value = (NullaryExpr<?>) newState.eval(var).get();
 							if (counter.containsKey(var)) {
-								if (counter.get(var).contains(newState.eval(var).get()))
+								if (counter.get(var).contains(value))
 									continue;
 								Collection<NullaryExpr<?>> values = counter.get(var);
-								values.add((NullaryExpr<?>) newState.eval(var).get());
+								values.add(value);
 								counter.replace(var, values);
+								if (values.size() > limit) {
+									dropouts.add(var);
+									vars.remove(var);
+									removed = true;
+								}
 							} else {
 								Collection<NullaryExpr<?>> val = new ArrayList<>();
-								val.add((NullaryExpr<?>) newState.eval(var).get());
+								val.add(value);
 								counter.put(var, val);
-							}
-						}
-						Collection<VarDecl<?>> vars = new ArrayList<>(newPrec.getVars());
-						for (VarDecl var : counter.keySet()) {
-							Collection<NullaryExpr<?>> values = counter.get(var);
-							if (values.size() > limit) {
-								dropouts.add(var);
-								vars.remove(var);
-								removed = true;
 							}
 						}
 						if (removed) {

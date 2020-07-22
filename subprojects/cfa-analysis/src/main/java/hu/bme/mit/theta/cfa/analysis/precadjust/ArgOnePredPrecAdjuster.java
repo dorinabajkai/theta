@@ -71,11 +71,12 @@ public class ArgOnePredPrecAdjuster implements PrecAdjuster<CfaState<Prod2State<
 						final ExplState newState = newPrec.createState(valuation);
 						result.add(newState);
 						for (VarDecl var : (Collection<? extends VarDecl<?>>) newState.getDecls()) {
+							NullaryExpr<?> value = (NullaryExpr<?>) newState.eval(var).get();
 							if (varValues.containsKey(var)) {
-								if (varValues.get(var).contains(newState.eval(var).get()))
+								if (varValues.get(var).contains(value))
 									continue;
 								Collection<NullaryExpr<?>> values = varValues.get(var);
-								values.add((NullaryExpr<?>) newState.eval(var).get());
+								values.add(value);
 								varValues.replace(var, values);
 								if (values.size() > limit) {
 									removed = true;
@@ -83,7 +84,7 @@ public class ArgOnePredPrecAdjuster implements PrecAdjuster<CfaState<Prod2State<
 								}
 							} else {
 								Collection<NullaryExpr<?>> val = new ArrayList<>();
-								val.add((NullaryExpr<?>) newState.eval(var).get());
+								val.add(value);
 								varValues.put(var, val);
 							}
 						}

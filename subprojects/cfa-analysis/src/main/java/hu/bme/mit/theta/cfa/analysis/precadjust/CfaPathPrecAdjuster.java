@@ -7,7 +7,6 @@ import hu.bme.mit.theta.analysis.expl.ExplState;
 import hu.bme.mit.theta.analysis.expr.ExprAction;
 import hu.bme.mit.theta.analysis.pred.PredPrec;
 import hu.bme.mit.theta.analysis.pred.PredState;
-import hu.bme.mit.theta.analysis.prod2.PredXExpl.PathPrecAdjuster;
 import hu.bme.mit.theta.analysis.prod2.Prod2Prec;
 import hu.bme.mit.theta.analysis.prod2.Prod2State;
 import hu.bme.mit.theta.cfa.CFA;
@@ -48,10 +47,6 @@ public class CfaPathPrecAdjuster implements PrecAdjuster<CfaState<Prod2State<Pre
 	public CfaPrec<Prod2Prec<PredPrec, ExplPrec>> adjust(CfaPrec<Prod2Prec<PredPrec, ExplPrec>> prec, ArgNode<CfaState<Prod2State<PredState, ExplState>>, CfaAction> node) {
 		checkNotNull(node);
 		checkNotNull(prec);
-		/*CFA.Loc loc = node.getState().getLoc();
-
-		PathPrecAdjuster precAdjuster = PathPrecAdjuster.create(solver, limit, lts, (CfaState<Prod2State<PredState, ExplState>> cfaState) -> cfaState.getState().getState2());
-		return prec.refine(loc, precAdjuster.adjust(prec.getPrec(loc), node));*/
 		CFA.Loc loc = node.getState().getLoc();
 		Collection<VarDecl<?>> dropouts = prec.getPrec(loc).getDropouts();
 		Map<VarDecl, Collection<NullaryExpr<?>>> varValues = new HashMap<>();
@@ -80,28 +75,27 @@ public class CfaPathPrecAdjuster implements PrecAdjuster<CfaState<Prod2State<Pre
 						final Valuation model = solver.getModel();
 						final Valuation valuation = PathUtils.extractValuation(model, action.nextIndexing());
 						final ExplState newState = newPrec.createState(valuation);
-						for (VarDecl var : (Collection<? extends VarDecl<?>>) newState.getDecls()) {
+						Collection<? extends VarDecl<?>> varsInState = (Collection<? extends VarDecl<?>>) newState.getDecls();
+						Collection<VarDecl<?>> vars = new ArrayList<>(newPrec.getVars());
+
+						for (VarDecl var : varsInState) {
+							NullaryExpr<?> value = (NullaryExpr<?>) newState.eval(var).get();
 							if (varValues.containsKey(var)) {
-								if (varValues.get(var).contains(newState.eval(var).get()))
+								if (varValues.get(var).contains(value))
 									continue;
 								Collection<NullaryExpr<?>> values = varValues.get(var);
-								values.add((NullaryExpr<?>) newState.eval(var).get());
+								values.add(value);
 								varValues.replace(var, values);
+								if (values.size() > limit) {
+									dropouts.add(var);
+									varValues.remove(var);
+									vars.remove(var);
+									removed = true;
+								}
 							} else {
 								Collection<NullaryExpr<?>> val = new ArrayList<>();
-								val.add((NullaryExpr<?>) newState.eval(var).get());
+								val.add(value);
 								varValues.put(var, val);
-							}
-						}
-						Collection<VarDecl<?>> vars = new ArrayList<>(newPrec.getVars());
-						Collection<VarDecl> varValuesKeys = new ArrayList<>(varValues.keySet());
-						for (VarDecl var : varValuesKeys) {
-							Collection<NullaryExpr<?>> values = varValues.get(var);
-							if (values.size() > limit) {
-								dropouts.add(var);
-								varValues.remove(var);
-								vars.remove(var);
-								removed = true;
 							}
 						}
 						if (removed) {
@@ -123,15 +117,16 @@ public class CfaPathPrecAdjuster implements PrecAdjuster<CfaState<Prod2State<Pre
 	private Map<VarDecl, Collection<NullaryExpr<?>>> addVars (Map<VarDecl, Collection<NullaryExpr<?>>> counter, ArgNode<CfaState<Prod2State<PredState, ExplState>>, CfaAction> node){
 		ExplState state =  node.getState().getState().getState2();
 		for ( VarDecl var : (Collection<? extends VarDecl<?>>) state.getDecls()) {
+			NullaryExpr<?> value = (NullaryExpr<?>) state.eval(var).get();
 			if (counter.containsKey(var)) {
-				if (counter.get(var).contains(state.eval(var).get()))
+				if (counter.get(var).contains(value))
 					continue;
 				Collection<NullaryExpr<?>> values = counter.get(var);
-				values.add((NullaryExpr<?>) state.eval(var).get());
+				values.add(value);
 				counter.replace(var, values);
 			} else {
 				Collection<NullaryExpr<?>> val = new ArrayList<>();
-				val.add((NullaryExpr<?>) state.eval(var).get());
+				val.add(value);
 				counter.put(var, val);
 			}
 		}

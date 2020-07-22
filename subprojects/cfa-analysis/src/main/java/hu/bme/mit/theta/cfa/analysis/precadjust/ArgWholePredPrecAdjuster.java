@@ -75,20 +75,21 @@ public class ArgWholePredPrecAdjuster implements PrecAdjuster<CfaState<Prod2Stat
 						final ExplState newState = newPrec.createState(valuation);
 						result.add(newState);
 						for (VarDecl var : (Collection<? extends VarDecl<?>>) newState.getDecls()) {
+							NullaryExpr<?> value = (NullaryExpr<?>) newState.eval(var).get();
 							if (varValues.containsKey(var)) {
-								if (varValues.get(var).contains(newState.eval(var).get()))
+								if (varValues.get(var).contains(value))
 									continue;
 								Collection<NullaryExpr<?>> values = varValues.get(var);
-								values.add((NullaryExpr<?>) newState.eval(var).get());
+								values.add(value);
 								varValues.replace(var, values);
+								if (varValues.values().size() > limit) {
+									removed = true;
+									return prec.refine(loc, Prod2Prec.of(prec.getPrec(loc).getPrec1(), ExplPrec.empty(), allVars));
+								}
 							} else {
 								Collection<NullaryExpr<?>> val = new ArrayList<>();
-								val.add((NullaryExpr<?>) newState.eval(var).get());
+								val.add(value);
 								varValues.put(var, val);
-							}
-							if (varValues.values().size() > limit) {
-								removed = true;
-								return prec.refine(loc, Prod2Prec.of(prec.getPrec(loc).getPrec1(), ExplPrec.empty(), allVars));
 							}
 						}
 
