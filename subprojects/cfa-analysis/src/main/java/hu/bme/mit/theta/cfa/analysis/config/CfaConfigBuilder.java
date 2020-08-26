@@ -206,6 +206,7 @@ public class CfaConfigBuilder {
 	private int limit = 5;
 	private boolean share = true;
 	private int secondFirst = 0;
+	private boolean old = false;
 
 	public CfaConfigBuilder(final Domain domain, final Refinement refinement, final PrecAdjust precAdjust, final SolverFactory solverFactory) {
 		this.domain = domain;
@@ -221,6 +222,11 @@ public class CfaConfigBuilder {
 
 	public CfaConfigBuilder share(final boolean share){
 		this.share = share;
+		return this;
+	}
+
+	public CfaConfigBuilder old(final boolean old){
+		this.old = old;
 		return this;
 	}
 
@@ -420,8 +426,16 @@ public class CfaConfigBuilder {
 			}
 
 			Analysis<PredState, ExprAction, PredPrec> predAnalysis = PredAnalysis.create(solver, predAbstractor, True());
-			Analysis<ExplState, StmtAction, ExplPrec> explAnalysis = ExplStmtAnalysis.create(solver, True(), maxEnum);
-			TransFunc<Prod2State<PredState, ExplState>, ExprAction, Prod2Prec<PredPrec, ExplPrec>> transFunc = PredXExplTransFunc.create(predAnalysis.getTransFunc(), explAnalysis.getTransFunc(), share);
+			Analysis<ExplState, StmtAction, ExplPrec> explAnalysis = null;
+
+			if(old) {
+				explAnalysis = ExplStmtAnalysis.create(solver, True(), maxEnum, StateBasedTransFunc.create(solver, limit));
+			}
+			else {
+				explAnalysis = ExplStmtAnalysis.create(solver, True(), maxEnum);
+			}
+
+			TransFunc<Prod2State<PredState, ExplState>, ExprAction, Prod2Prec<PredPrec, ExplPrec>> transFunc = PredXExplTransFunc.create(predAnalysis.getTransFunc(), (Prod2ExplTransFunc) explAnalysis.getTransFunc(), share);
 			PartialOrd<Prod2State<PredState, ExplState>> partialOrd = PredXExplOrd.create(predAnalysis.getPartialOrd(), explAnalysis.getPartialOrd(), secondFirst);
 			final Analysis<CfaState<Prod2State<PredState,ExplState>>, CfaAction, CfaPrec<Prod2Prec<PredPrec,ExplPrec>>> analysis = CfaAnalysis
 					.create(cfa.getInitLoc(), Prod2Analysis.create(partialOrd, predAnalysis, explAnalysis, transFunc));

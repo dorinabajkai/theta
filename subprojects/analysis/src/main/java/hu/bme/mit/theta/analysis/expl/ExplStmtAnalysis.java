@@ -22,6 +22,7 @@ import hu.bme.mit.theta.analysis.InitFunc;
 import hu.bme.mit.theta.analysis.PartialOrd;
 import hu.bme.mit.theta.analysis.TransFunc;
 import hu.bme.mit.theta.analysis.expr.StmtAction;
+import hu.bme.mit.theta.analysis.prod2.PredXExpl.Prod2ExplTransFunc;
 import hu.bme.mit.theta.core.type.Expr;
 import hu.bme.mit.theta.core.type.booltype.BoolType;
 import hu.bme.mit.theta.solver.Solver;
@@ -30,7 +31,7 @@ public final class ExplStmtAnalysis implements Analysis<ExplState, StmtAction, E
 
 	private final PartialOrd<ExplState> partialOrd;
 	private final InitFunc<ExplState, ExplPrec> initFunc;
-	private final TransFunc<ExplState, StmtAction, ExplPrec> transFunc;
+	private final Prod2ExplTransFunc transFunc;
 
 	private ExplStmtAnalysis(final Solver solver, final Expr<BoolType> initExpr, final int maxSuccToEnumerate) {
 		checkNotNull(solver);
@@ -40,6 +41,14 @@ public final class ExplStmtAnalysis implements Analysis<ExplState, StmtAction, E
 		this.transFunc = ExplStmtTransFunc.create(solver, maxSuccToEnumerate);
 	}
 
+	private ExplStmtAnalysis(final Solver solver, final Expr<BoolType> initExpr, final int maxSuccToEnumerate, Prod2ExplTransFunc transFunc) {
+		checkNotNull(solver);
+		checkNotNull(initExpr);
+		this.partialOrd = ExplOrd.getInstance();
+		this.initFunc = ExplInitFunc.create(solver, initExpr);
+		this.transFunc = transFunc;
+	}
+
 	public static ExplStmtAnalysis create(final Solver solver, final Expr<BoolType> initExpr,
 										  final int maxSuccToEnumerate) {
 		return new ExplStmtAnalysis(solver, initExpr, maxSuccToEnumerate);
@@ -47,6 +56,10 @@ public final class ExplStmtAnalysis implements Analysis<ExplState, StmtAction, E
 
 	public static ExplStmtAnalysis create(final Solver solver, final Expr<BoolType> initExpr) {
 		return create(solver, initExpr, 0);
+	}
+
+	public static ExplStmtAnalysis create(final Solver solver, final Expr<BoolType> initExpr, final int maxSuccToEnumerate, Prod2ExplTransFunc transFunc) {
+		return new ExplStmtAnalysis(solver, initExpr, maxSuccToEnumerate, transFunc);
 	}
 
 	@Override
@@ -60,7 +73,7 @@ public final class ExplStmtAnalysis implements Analysis<ExplState, StmtAction, E
 	}
 
 	@Override
-	public TransFunc<ExplState, StmtAction, ExplPrec> getTransFunc() {
+	public Prod2ExplTransFunc getTransFunc() {
 		return transFunc;
 	}
 

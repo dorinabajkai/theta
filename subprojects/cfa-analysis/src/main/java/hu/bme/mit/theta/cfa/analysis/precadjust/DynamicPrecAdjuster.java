@@ -129,6 +129,6 @@ public class DynamicPrecAdjuster implements PrecAdjuster<CfaState<Prod2State<Pre
 			}
 		}
 
-		return prec.refine(loc, Prod2Prec.of(predPrec, explPrec, dropouts));
+ 		return prec.refine(loc, Prod2Prec.of(predPrec, explPrec, dropouts));
 	}
 }

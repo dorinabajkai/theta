@@ -28,6 +28,8 @@ import hu.bme.mit.theta.analysis.TransFunc;
 import hu.bme.mit.theta.analysis.expl.StmtApplier.ApplyResult;
 import hu.bme.mit.theta.analysis.expr.ExprStates;
 import hu.bme.mit.theta.analysis.expr.StmtAction;
+import hu.bme.mit.theta.analysis.prod2.PredXExpl.Prod2ExplTransFunc;
+import hu.bme.mit.theta.core.decl.VarDecl;
 import hu.bme.mit.theta.core.model.MutableValuation;
 import hu.bme.mit.theta.core.stmt.Stmt;
 import hu.bme.mit.theta.core.type.Expr;
@@ -37,7 +39,7 @@ import hu.bme.mit.theta.core.utils.StmtUtils;
 import hu.bme.mit.theta.core.utils.VarIndexing;
 import hu.bme.mit.theta.solver.Solver;
 
-public final class ExplStmtTransFunc implements TransFunc<ExplState, StmtAction, ExplPrec> {
+public final class ExplStmtTransFunc extends Prod2ExplTransFunc {
 
 	private final Solver solver;
 	// 0 means arbitrarily many
@@ -97,4 +99,13 @@ public final class ExplStmtTransFunc implements TransFunc<ExplState, StmtAction,
 		return Collections.singleton(abstracted);
 	}
 
+	@Override
+	public Collection<VarDecl<?>> getDropouts() {
+		return null;
+	}
+
+	@Override
+	public void setDropouts(Collection<VarDecl<?>> vars) {
+
+	}
 }

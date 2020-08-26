@@ -21,11 +21,11 @@ import static java.util.Collections.singleton;
 public final class PredXExplTransFunc implements TransFunc<Prod2State<PredState, ExplState>, ExprAction, Prod2Prec<PredPrec, ExplPrec>> {
 
 	private final TransFunc<PredState, ExprAction, PredPrec> transFunc1;
-	private final TransFunc<ExplState, StmtAction, ExplPrec> transFunc2;
+	private final Prod2ExplTransFunc transFunc2;
 	private final StrengtheningOperator<PredState, ExplState, PredPrec, ExplPrec> strenghteningOperator;
 	private final boolean help;
 
-	private PredXExplTransFunc(final TransFunc<PredState, ExprAction, PredPrec> transFunc1, final TransFunc<ExplState, StmtAction, ExplPrec> transFunc2,
+	private PredXExplTransFunc(final TransFunc<PredState, ExprAction, PredPrec> transFunc1, final Prod2ExplTransFunc transFunc2,
 						   final StrengtheningOperator<PredState, ExplState, PredPrec, ExplPrec> strenghteningOperator, final boolean help) {
 		this.transFunc1 = checkNotNull(transFunc1);
 		this.transFunc2 = checkNotNull(transFunc2);
@@ -34,12 +34,12 @@ public final class PredXExplTransFunc implements TransFunc<Prod2State<PredState,
 	}
 
 	public static PredXExplTransFunc create(
-			final TransFunc<PredState, ExprAction, PredPrec> transFunc1, final TransFunc<ExplState, StmtAction, ExplPrec> transFunc2, final boolean help) {
+			final TransFunc<PredState, ExprAction, PredPrec> transFunc1, final Prod2ExplTransFunc transFunc2, final boolean help) {
 		return create(transFunc1, transFunc2, (states, prec) -> states, help);
 	}
 
 	public static PredXExplTransFunc create(
-			final TransFunc<PredState, ExprAction, PredPrec> transFunc1, final TransFunc<ExplState, StmtAction, ExplPrec> transFunc2,
+			final TransFunc<PredState, ExprAction, PredPrec> transFunc1, final Prod2ExplTransFunc transFunc2,
 			final StrengtheningOperator<PredState, ExplState, PredPrec, ExplPrec> strenghteningOperator, final boolean help) {
 		return new PredXExplTransFunc(transFunc1, transFunc2, strenghteningOperator, help);
 	}
@@ -68,6 +68,8 @@ public final class PredXExplTransFunc implements TransFunc<Prod2State<PredState,
 					prec.getPrec1());
 			optBottom1 = succStates1.stream().filter(State::isBottom).findAny();
 		}
+
+		prec.addDropouts(transFunc2.getDropouts());
 
 		if (optBottom1.isPresent()) {
 			final PredState bottom1 = optBottom1.get();
