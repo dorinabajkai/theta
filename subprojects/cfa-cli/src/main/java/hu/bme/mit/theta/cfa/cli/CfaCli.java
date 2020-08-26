@@ -92,6 +92,9 @@ public class CfaCli {
 	@Parameter(names = "--share", description = "Turn on or off data sharing between pred and expl", arity = 1)
 	boolean share = true;
 
+	@Parameter(names = "--old", description = "Use old algorithm for prod2", arity = 1)
+	boolean old = false;
+
 	@Parameter(names = "--search", description = "Search strategy")
 	Search search = Search.BFS;
 
@@ -278,7 +281,7 @@ public class CfaCli {
 	}
 
 	private CfaConfig<?, ?, ?> buildConfiguration(final CFA cfa) {
-		return new CfaConfigBuilder(domain, refinement, precAdjust, solverFactory).limit(limit).share(share).precGranularity(precGranularity).search(search)
+		return new CfaConfigBuilder(domain, refinement, precAdjust, solverFactory).limit(limit).share(share).old(old).precGranularity(precGranularity).search(search)
 				.predSplit(predSplit).predDomain(predDomain).secondFirst(secondFirst).encoding(encoding).maxEnum(maxEnum).initPrec(initPrec).logger(logger).build(cfa);
 	}
 
