@@ -69,7 +69,9 @@ public final class PredXExplTransFunc implements TransFunc<Prod2State<PredState,
 			optBottom1 = succStates1.stream().filter(State::isBottom).findAny();
 		}
 
-		prec.addDropouts(transFunc2.getDropouts());
+		if(transFunc2.getDropouts() != null) {
+			prec.addDropouts(transFunc2.getDropouts());
+		}
 
 		if (optBottom1.isPresent()) {
 			final PredState bottom1 = optBottom1.get();
