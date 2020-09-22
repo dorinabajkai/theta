@@ -87,7 +87,9 @@ public class CfaPathPrecAdjuster implements PrecAdjuster<CfaState<Prod2State<Pre
 								values.add(value);
 								varValues.replace(var, values);
 								if (values.size() > limit) {
-									dropouts.add(var);
+									if(!(dropouts.contains(var))) {
+										dropouts.add(var);
+									}
 									varValues.remove(var);
 									vars.remove(var);
 									removed = true;

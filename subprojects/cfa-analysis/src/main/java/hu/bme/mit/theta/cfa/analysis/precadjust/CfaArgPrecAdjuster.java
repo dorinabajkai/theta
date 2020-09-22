@@ -79,7 +79,9 @@ public class CfaArgPrecAdjuster implements PrecAdjuster<CfaState<Prod2State<Pred
 								values.add(newVar);
 								varValues.replace(var, values);
 								if (values.size() > limit) {
-									dropouts.add(var);
+									if(!(dropouts.contains(var))) {
+										dropouts.add(var);
+									}
 									varValues.remove(var);
 									vars.remove(var);
 									removed = true;

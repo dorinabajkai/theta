@@ -98,7 +98,9 @@ public class DynamicPrecAdjuster implements PrecAdjuster<CfaState<Prod2State<Pre
 						for (VarDecl var : varValuesKeys) {
 							Collection<NullaryExpr<?>> values = varValues.get(var);
 							if (values.size() > limit) {
-								dropouts.add(var);
+								if(!(dropouts.contains(var))) {
+									dropouts.add(var);
+								}
 								varValues.remove(var);
 								vars.remove(var);
 								boolean addpred = true;

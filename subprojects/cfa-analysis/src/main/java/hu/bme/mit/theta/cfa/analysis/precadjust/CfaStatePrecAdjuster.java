@@ -79,7 +79,9 @@ public class CfaStatePrecAdjuster implements PrecAdjuster<CfaState<Prod2State<Pr
 								values.add(value);
 								counter.replace(var, values);
 								if (values.size() > limit) {
-									dropouts.add(var);
+									if(!(dropouts.contains(var))) {
+										dropouts.add(var);
+									}
 									vars.remove(var);
 									removed = true;
 								}

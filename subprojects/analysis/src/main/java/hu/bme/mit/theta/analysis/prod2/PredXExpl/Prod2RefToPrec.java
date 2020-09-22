@@ -37,6 +37,7 @@ public class Prod2RefToPrec implements RefutationToPrec<Prod2Prec<PredPrec, Expl
 			final Collection<VarDecl<?>> vars = new ArrayList<>();
 			boolean isPred = false;
 
+
 			for (final Expr exp : exprs) {
 				for (final VarDecl var : ExprUtils.getVars(exp)) {
 					if (dropouts.contains(var)) {
@@ -63,8 +64,17 @@ public class Prod2RefToPrec implements RefutationToPrec<Prod2Prec<PredPrec, Expl
 		ExplPrec ePrec1 = prec1.getPrec2();
 		ExplPrec ePrec2 = prec2.getPrec2();
 		List<VarDecl<?>> dropouts = new ArrayList();
-		dropouts.addAll(prec1.getDropouts());
-		dropouts.addAll(prec2.getDropouts());
+
+		for(VarDecl var : prec1.getDropouts()) {
+			if(!dropouts.contains(var))
+				dropouts.add(var);
+		}
+
+		for(VarDecl var : prec2.getDropouts()) {
+			if(!dropouts.contains(var))
+				dropouts.add(var);
+		}
+
 		return Prod2Prec.of(pPrec1.join(pPrec2), ePrec1.join(ePrec2), dropouts);
 	}
 }

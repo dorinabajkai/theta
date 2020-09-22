@@ -43,7 +43,9 @@ public class CfaArgPrecAdjusterWithT implements PrecAdjuster<CfaState<Prod2State
 		for (VarDecl var : varValues.keySet()) {
 			Collection<NullaryExpr<?>> values = varValues.get(var);
 			if (values.size() > limit) {
-				dropouts.add(var);
+				if(!(dropouts.contains(var))) {
+					dropouts.add(var);
+				}
 				vars.remove(var);
 			}
 		}

@@ -51,7 +51,9 @@ public class CfaPathPrecAdjusterWithT implements PrecAdjuster<CfaState<Prod2Stat
 		for (VarDecl var : counter.keySet()) {
 			Collection<NullaryExpr<?>> values = counter.get(var);
 			if (values.size() > limit) {
-				dropouts.add(var);
+				if(!(dropouts.contains(var))) {
+					dropouts.add(var);
+				}
 				vars.remove(var);
 			}
 		}
